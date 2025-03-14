@@ -1,0 +1,14 @@
+name: jetbrains/untag-current-build
+version: 1.0.0
+description: |
+  Removes the specific tag from the current build.
+inputs:
+  - env.input_tags:
+      type: text
+      required: true
+      label: Tags
+      description: |
+        The newline-delimited list of tags to remove.
+steps:
+  - name: Remove tags from the current build
+    kotlin-script: !include src.main.kts

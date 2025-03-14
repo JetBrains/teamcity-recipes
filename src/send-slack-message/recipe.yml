@@ -1,0 +1,27 @@
+name: jetbrains/send-slack-message
+version: 1.0.0
+description: |
+  Sends a Slack notification. 
+  Requires a project that has a configured Slack connection with Notifications limit greater than 0.
+inputs:
+  - env.input_connection_id:
+      type: text
+      required: true
+      label: Connection ID
+      description: |
+        The ID of a Slack connection owned by this project or one of its parent projects.
+  - env.input_send_to:
+      type: text
+      required: true
+      label: Slack Channel/User ID
+      description: |
+        The Slack channel ID can be copied from the channel `About` tab. A user ID can be retrieved in the `Profile | More Actions | Copy member ID`.
+  - env.input_message:
+      type: text
+      required: true
+      label: Message
+      description: |
+        The message to send. Supports Markdown formatting.
+steps:
+  - name: Send Slack Notification
+    kotlin-script: !include src.main.kts

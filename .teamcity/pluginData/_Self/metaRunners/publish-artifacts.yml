@@ -1,0 +1,25 @@
+name: jetbrains/publish-artifacts
+version: 1.0.0
+description: |
+  Publishes build artifacts immediately after they are built, while the build is still running.
+inputs:
+  - env.input_path_to_publish:
+      type: text
+      required: true
+      label: Artifact paths
+      description: |
+        Newline- or comma-separated paths in the same format as in build configuration’s Artifact paths property. 
+        Accepts absolute and relative to the build checkout directory paths, and allows you to use asterisk (*) as a wildcard.
+steps:
+  - name: Publish artifacts
+    kotlin-script: |-
+      @file:Repository("https://download.jetbrains.com/teamcity-repository/")
+      @file:DependsOn("org.jetbrains.teamcity:serviceMessages:2024.12")
+      
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.PUBLISH_ARTIFACTS
+      
+      val message = ServiceMessage.asString(PUBLISH_ARTIFACTS, requiredInput("path_to_publish"))
+      println(message)
+      
+      fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")

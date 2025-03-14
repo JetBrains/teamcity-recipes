@@ -1,0 +1,37 @@
+name: jetbrains/tag-build
+version: 1.0.0
+description: |
+  Tags a specific TeamCity build. Locates the build to tag by the given build ID. 
+  To tag the current build instead, use the 'tag-current-build' recipe.
+  This recipe utilizes TeamCity REST API and requires Token-Based Authentication credentials.
+inputs:
+  - env.input_build_id:
+      type: text
+      required: true
+      label: Build ID
+      description: |
+        The ID of a build that will be tagged.
+  - env.input_tags:
+      type: text
+      required: true
+      label: Tags
+      description: |
+        A newline-delimited list of tags to add.
+  - env.input_server_url:
+      type: text
+      required: false
+      label: Server URL
+      description: |
+        The full TeamCity server URL (for example, https://teamcity.jetbrains.com). 
+        The default value is %teamcity.serverUrl%.
+      default: "%teamcity.serverUrl%"
+  - env.input_access_token:
+      type: password
+      required: false
+      label: Access token
+      description: |
+        TeamCity user access token (“User Profile | Access Tokens” in TeamCity UI). 
+        Supports remote parameters that retrieve secrets from external vaults (for example, HashiCorp Vault) and Kotlin DSL Secure value tokens.
+steps:
+  - name: Add Build Tag using TeamCity Rest API
+    kotlin-script: !include src.main.kts

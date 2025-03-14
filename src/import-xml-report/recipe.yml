@@ -1,0 +1,27 @@
+name: jetbrains/import-xml-report
+version: 1.0.0
+description: |
+  Imports an XML test report. 
+  Supports JUnit, Surefire, NUnit, and VSTest formats.
+inputs:
+  - env.input_report_type:
+      type: select
+      required: true
+      label: Report type
+      options:
+        - junit
+        - surefire
+        - nunit
+        - vstest
+      description: |
+        The imported report type.
+  - env.input_import_path:
+      type: text
+      required: true
+      label: Path
+      description: |
+        The path to report file (or a directory) relative to the agent checkout directory. 
+        Supports Ant-like wildcards.
+steps:
+  - name: Import XML Report
+    kotlin-script: !include src.main.kts

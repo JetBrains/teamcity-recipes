@@ -1,0 +1,15 @@
+name: jetbrains/publish-artifacts
+version: 1.0.0
+description: |
+  Publishes build artifacts immediately after they are built, while the build is still running.
+inputs:
+  - env.input_path_to_publish:
+      type: text
+      required: true
+      label: Artifact paths
+      description: |
+        Newline- or comma-separated paths in the same format as in build configuration’s Artifact paths property. 
+        Accepts absolute and relative to the build checkout directory paths, and allows you to use asterisk (*) as a wildcard.
+steps:
+  - name: Publish artifacts
+    kotlin-script: !include src.main.kts

@@ -1,0 +1,41 @@
+name: jetbrains/download-file
+version: 1.0.0
+description: |
+  Downloads a file from the specified URL to the given directory. 
+  Supports bearer authentication, as well as custom headers.
+inputs:
+  - env.input_url:
+      type: text
+      required: true
+      label: File URL
+      description: |
+        The URL of a file to download.
+  - env.input_output_dir:
+      type: text
+      required: true
+      label: Save to
+      description: |
+        The absolute (/var/log/, C:\logs\) or relative to the agent working directory (./logs/) path where the file should be saved. 
+        Creates the required directory if no such path exists.
+        Use '.' to save file to the working dir.
+  - env.input_filename:
+      type: text
+      required: false
+      label: File name
+      description: |
+        The name of the saved file. Leave this property empty to retain the original file name.
+  - env.input_bearer_token:
+      type: password
+      required: false
+      label: Bearer token auth
+      description: |
+        The optional Bearer Token value.
+  - env.input_headers:
+      type: text
+      required: false
+      label: Additional HTTP headers
+      description: |
+        The newline-delimited list of headers in the 'Header-Name: Header-Value' format.
+steps:
+  - name: Download File
+    kotlin-script: !include src.main.kts

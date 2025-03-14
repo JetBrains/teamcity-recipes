@@ -1,0 +1,29 @@
+name: jetbrains/send-email
+version: 1.0.0
+description: |
+  Sends a custom email from a build step. 
+  Requires a configured SMTP server (Admin | Email Notifier in TeamCity UI) with the “Notifications limit” property greater than 0.
+inputs:
+  - env.input_address:
+      type: text
+      required: true
+      label: Send to
+      description: |
+        A comma-separated list of recipient email addresses. These addresses must match the rules specified in the TeamCity Email Notifier’s Allowed addresses setting.
+  - env.input_subject:
+      type: text
+      required: true
+      label: Subject
+      description: |
+        The email subject.
+  - env.input_message:
+      type: text
+      required: true
+      label: Message
+      description: |
+        The message body in plain text format. 
+        URLs to external resources are automatically blocked. 
+        To include external links, update the “Email Notifier | Allowed Hostnames” parameter.
+steps:
+  - name: Send email message
+    kotlin-script: !include src.main.kts

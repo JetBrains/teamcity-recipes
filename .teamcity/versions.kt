@@ -1,0 +1,17 @@
+object Recipes {
+    const val AddToPath = "jetbrains/add-to-path@1.0.0"
+    const val CreateFile = "jetbrains/create-file@1.0.0"
+    const val DownloadFile = "jetbrains/download-file@1.0.0"
+    const val ImportXmlReport = "jetbrains/import-xml-report@1.0.0"
+    const val InstallAwsCli = "jetbrains/install-aws-cli@1.0.0"
+    const val PinBuild = "jetbrains/pin-build@1.0.0"
+    const val PublishArtifacts = "jetbrains/publish-artifacts@1.0.0"
+    const val SendEmail = "jetbrains/send-email@1.0.0"
+    const val SendSlackMessage = "jetbrains/send-slack-message@1.0.0"
+    const val SetBuildStatus = "jetbrains/set-build-status@1.0.0"
+    const val SetEnvironmentVariable = "jetbrains/set-environment-variable@1.0.0"
+    const val SetupNode = "jetbrains/setup-node@1.0.0"
+    const val TagBuild = "jetbrains/tag-build@1.0.0"
+    const val TagCurrentBuild = "jetbrains/tag-current-build@1.0.0"
+    const val UntagCurrentBuild = "jetbrains/untag-current-build@1.0.0"
+}

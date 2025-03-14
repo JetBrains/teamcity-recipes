@@ -1,0 +1,19 @@
+name: jetbrains/set-environment-variable
+version: 1.0.0
+description: |
+  Sets the environment variable to the required value, creating it if absent.
+inputs:
+  - env.input_name:
+      type: text
+      required: true
+      label: Name
+      description: |
+        The name of the environment variable to change, without the “env.” prefix. 
+        Examples: “PATH”, “JAVA_HOME”, “DOTNET_ROOT”.
+  - env.input_value:
+      type: text
+      required: true
+      label: Value
+steps:
+  - name: Set environment variable
+    kotlin-script: !include src.main.kts

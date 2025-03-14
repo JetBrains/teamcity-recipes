@@ -1,0 +1,15 @@
+name: jetbrains/tag-current-build
+version: 1.0.0
+description: |
+  Tags the current build. 
+  If you need to tag specific builds by their IDs, use the 'tag-build' recipe instead.
+inputs:
+  - env.input_tags:
+      type: text
+      required: true
+      label: Tags
+      description: | 
+        A newline-delimited list of tags to add.
+steps:
+  - name: Add custom tags to the current build
+    kotlin-script: !include src.main.kts

@@ -1,0 +1,24 @@
+name: jetbrains/setup-node
+version: 1.0.0
+description: |
+  Installs Node.js on the agent, allowing subsequent build steps to call the “node” command.
+inputs:
+  - env.input_version:
+      type: text
+      required: true
+      label: Node.js Version
+      description: |
+        The Node.js version in the “major”, “major.minor”, or “major.minor.patch” format. Examples: “18”, “18.2”, “18.2.0”.
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        The installation path for the Node.js on the agent machine. 
+        Accepts absolute (/lib/apps/node, C:\util\node) and relative to the agent checkout directory (util/node) paths. 
+        By default, the agent’s tools directory is used.
+      default: "%teamcity.agent.tools.dir%"
+
+steps:
+  - name: Install NodeJS
+    kotlin-script: !include src.main.kts

@@ -1,0 +1,26 @@
+name: jetbrains/untag-current-build
+version: 1.0.0
+description: |
+  Removes the specific tag from the current build.
+inputs:
+  - env.input_tags:
+      type: text
+      required: true
+      label: Tags
+      description: |
+        The newline-delimited list of tags to remove.
+steps:
+  - name: Remove tags from the current build
+    kotlin-script: |-
+      @file:Repository("https://download.jetbrains.com/teamcity-repository/")
+      @file:DependsOn("org.jetbrains.teamcity:serviceMessages:2024.12")
+      
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.REMOVE_BUILD_TAG
+      
+      val tags = requiredInput("tags")
+      tags.lines().filter { it.isNotEmpty() }.forEach {
+          println(ServiceMessage.asString(REMOVE_BUILD_TAG, it))
+      }
+      
+      fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")

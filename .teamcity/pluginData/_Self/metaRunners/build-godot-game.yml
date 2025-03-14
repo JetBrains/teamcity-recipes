@@ -1,0 +1,37 @@
+name: jetbrains/build-godot-game
+version: 1.0.0
+description: A pipeline for building and testing a Godot game using .NET
+container: barichello/godot-ci:mono-4.2.1
+inputs:
+  - export_target:
+      type: select
+      required: true
+      label: Export Target
+      description: The platform to export the game to
+      default: Linux
+      options:
+        - Windows Desktop
+        - Linux
+  - export_file:
+      type: text
+      required: true
+      label: Export File Name
+      description: The name of the exported game file
+      default: Export.zip
+steps:
+  - name: Setup .NET
+    script: |
+      wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+      dpkg -i packages-microsoft-prod.deb
+      apt-get update
+      apt-get install -y dotnet-sdk-8.0
+  - name: Import assets
+    script: |
+      godot --headless --verbose --editor --quit
+  - name: Export game
+    script: |
+      godot --headless --verbose --export-release "%export_target%" "%export_file%"
+  - name: Run tests
+    script: |
+      export GODOT_BIN=/usr/local/bin/godot
+      dotnet test --settings .runsettings --logger:trx

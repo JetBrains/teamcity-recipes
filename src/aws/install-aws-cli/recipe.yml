@@ -1,0 +1,25 @@
+name: jetbrains/install-aws-cli
+version: 1.0.0
+description: |
+  Installs the AWS Command Line Interface (CLI) on the agent, allowing subsequent build steps to call the “aws” command.
+inputs:
+  - env.input_aws_cli_version:
+      type: text
+      required: false
+      label: AWS CLI version
+      description: |
+        The AWS CLI version in 'major.minor.patch' format, or 'latest' to install the latest version available.
+        Minimum supported version: 2.0.0 (AWS CLI v1 is not supported).
+      default: "latest"
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        The installation path for the AWS CLI on the agent machine.
+        Accepts absolute (/lib/apps/aws-cli, C:\util\aws-cli) and relative to the agent checkout directory (./aws-cli) paths. 
+        By default, the agent’s tools dir is used.
+      default: "%teamcity.agent.tools.dir%"
+steps:
+  - name: Install AWS CLI
+    kotlin-script: !include src.main.kts

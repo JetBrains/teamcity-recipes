@@ -1,0 +1,22 @@
+name: jetbrains/create-file
+version: 1.0.0
+description: |
+  Creates a text file with the specified content at the given path. 
+  The directory is created automatically if it does not exist.
+inputs:
+  - env.input_path:
+      type: text
+      required: true
+      label: Path
+      description: |
+        The path where a new file is created. 
+        Accepts absolute (/var/log/output.txt, C:\logs\output.txt) and relative to the agent working directory (logs/file.txt) paths.
+  - env.input_content:
+      type: text
+      required: true
+      label: Content
+      description: |
+        The contents of a newly created file.
+steps:
+  - name: Create Text File
+    kotlin-script: !include src.main.kts

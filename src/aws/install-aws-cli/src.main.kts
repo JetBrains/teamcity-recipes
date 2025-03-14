@@ -1,0 +1,415 @@
+@file:Repository("https://repo.maven.apache.org/maven2/")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+@file:DependsOn("org.apache.commons:commons-compress:1.27.1")
+
+@file:Repository("https://download.jetbrains.com/teamcity-repository/")
+@file:DependsOn("org.jetbrains.teamcity:serviceMessages:2024.12")
+
+import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
+import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
+import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import org.apache.commons.compress.archivers.zip.ZipFile
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FileUtils.copyURLToFile
+import org.apache.commons.io.FileUtils.getTempDirectory
+import org.apache.commons.lang3.SystemUtils
+import java.io.File
+import java.io.InputStream
+import java.net.URL
+import java.util.concurrent.TimeUnit
+import kotlin.system.exitProcess
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+
+runCatchingWithLogging {
+    val installer = when {
+        SystemUtils.IS_OS_WINDOWS -> WindowsInstaller()
+        SystemUtils.IS_OS_LINUX -> LinuxInstaller()
+        SystemUtils.IS_OS_MAC -> MacInstaller()
+        else -> error("Unsupported OS ${SystemUtils.OS_NAME}")
+    }
+
+    val versionInput = requiredInput("aws_cli_version")
+
+    val isVersionSpecified = versionInput.isNotBlank() && !versionInput.equals("latest", ignoreCase = true)
+    if (versionInput.startsWith("1"))
+        error("AWS CLI v1 is not supported")
+    if (isVersionSpecified && !versionInput.matches(versionRegex)) {
+        error(
+            "$versionInput is not a valid AWS CLI version. " +
+                    "Please specify the version in major.minor.patch format, or leave the input empty " +
+                    "to install the latest version"
+        )
+    }
+
+    if (isVersionSpecified && installer.isInstalled(versionInput)) {
+        println("AWS CLI $versionInput is already installed to ${installer.getInstallDir(versionInput)}, skipping installation...")
+        installer.updateEnvPath(versionInput)
+        exitProcess(0)
+    }
+    val availableVersions = fetchAwsCliVersions()
+    if (isVersionSpecified && !availableVersions.contains(versionInput)) {
+        error("$versionInput is not a valid AWS CLI version. Available versions: $availableVersions")
+    }
+
+    val version = if (isVersionSpecified) versionInput else availableVersions.first()
+    if (!isVersionSpecified && installer.isInstalled(version)) {
+        println("The latest version of AWS CLI $version is already installed to ${installer.getInstallDir(version)}, skipping installation...")
+        installer.updateEnvPath(version)
+        exitProcess(0)
+    }
+
+
+    println("Starting installation of AWS CLI $version")
+    installer.install(version)
+}
+
+interface AwsCliInstaller {
+    fun getInstallDir(version: String): String
+    fun isInstalled(version: String): Boolean
+    fun install(version: String)
+    fun updateEnvPath(version: String)
+}
+
+class LinuxInstaller : AwsCliInstaller {
+    override fun getInstallDir(version: String) = """$toolsDir/aws-cli.$version"""
+
+    override fun isInstalled(version: String): Boolean {
+        val binDir = File(binDir(version))
+        return binDir.isDirectory() && ProcessUtils.runProcess(
+            listOf("./aws", "--version"),
+            binDir,
+            ProcessUtils.RunOptions(isSilent = true),
+        )?.exitCode == 0
+    }
+
+    private fun binDir(version: String) = "${getInstallDir(version)}/bin"
+
+    override fun install(version: String) {
+        val arch = if (System.getProperty("os.arch").equals("aarch64", ignoreCase = true)) "aarch64" else "x86_64"
+        val url = "https://awscli.amazonaws.com/awscli-exe-linux-$arch-$version.zip"
+        val temp = prepareTempDir()
+        println("Downloading AWS CLI from $url to ${temp.absolutePath}")
+
+        val zip = downloadFile(url, temp)
+        val unpacked = File(temp, "aws-cli-unpacked")
+        println("Unpacking to ${unpacked.absolutePath}")
+        unpackZip(zip, unpacked.absolutePath)
+
+        val installDir = getInstallDir(version)
+        val binDir = """$installDir/bin"""
+        File(binDir).mkdirs()
+
+        val installer = """${unpacked.absolutePath}/aws/install"""
+        runProcessOrFail(listOf(installer, "--bin-dir", binDir, "--install-dir", installDir), temp)
+
+        updateEnvPath(version)
+        cleanUpAndLogSuccess(temp, version)
+    }
+
+    override fun updateEnvPath(version: String) = setEnvPath("""${binDir(version)}:${System.getenv("PATH")}""")
+
+    private fun unpackZip(zipFile: File, outputDir: String) {
+        File(outputDir).apply { if (!exists()) mkdirs() }
+
+        ZipFile(zipFile).use { zip ->
+            zip.entries.iterator().forEach { entry ->
+                val outFile = File(outputDir, entry.name)
+
+                if (!outFile.canonicalPath.startsWith(File(outputDir).canonicalPath)) {
+                    throw SecurityException("Zip entry is outside of the target directory: ${entry.name}")
+                }
+
+                if (entry.isDirectory) {
+                    outFile.mkdirs()
+                } else {
+                    outFile.parentFile?.mkdirs()
+                    zip.getInputStream(entry).use { input -> outFile.outputStream().use { input.copyTo(it) } }
+                    outFile.setExecutable((entry.unixMode and 0b001_000_000) != 0)
+                    outFile.setReadable(true, (entry.unixMode and 0b100_000_000) != 0)
+                    outFile.setWritable((entry.unixMode and 0b010_000_000) != 0)
+                }
+            }
+        }
+    }
+}
+
+class MacInstaller : AwsCliInstaller {
+    override fun getInstallDir(version: String) = """$toolsDir/aws-cli.$version"""
+
+    override fun isInstalled(version: String): Boolean {
+        val installDir = File(getInstallDir(version), "aws-cli")
+        return installDir.isDirectory() && ProcessUtils.runProcess(
+            listOf("./aws", "--version"),
+            installDir,
+            ProcessUtils.RunOptions(isSilent = true),
+        )?.exitCode == 0
+    }
+
+    override fun install(version: String) {
+        val installDir = getInstallDir(version).also { File(it).mkdirs() }
+
+        installRosettaIfNeeded(installDir)
+
+        val url = "https://awscli.amazonaws.com/AWSCLIV2-$version.pkg"
+        val temp = prepareTempDir()
+        println("Downloading AWS CLI from $url to ${temp.absolutePath}")
+        val pkg = downloadFile(url, temp)
+
+        val choicesXml = File(temp, "choices.xml")
+        choicesXml.writeText(
+            """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+          <array>
+            <dict>
+              <key>choiceAttribute</key>
+              <string>customLocation</string>
+              <key>attributeSetting</key>
+              <string>${installDir}</string>
+              <key>choiceIdentifier</key>
+              <string>default</string>
+            </dict>
+          </array>
+        </plist>
+        """.trimIndent()
+        )
+
+        runProcessOrFail(
+            listOf(
+                "installer",
+                "-pkg", pkg.name,
+                "-target", "CurrentUserHomeDirectory",
+                "-applyChoiceChangesXML", choicesXml.name,
+            ), temp
+        )
+        updateEnvPath(version)
+        cleanUpAndLogSuccess(temp, version)
+    }
+
+    override fun updateEnvPath(version: String) =
+        setEnvPath("""${getInstallDir(version)}/aws-cli:${System.getenv("PATH")}""")
+
+    private fun installRosettaIfNeeded(installDir: String) {
+        if (System.getProperty("os.arch").lowercase() != "aarch64") {
+            return
+        }
+        println("Rosetta 2 is required for AWS CLI installation on arm64, checking if it's installed...")
+        val isRosettaMissing =
+            ProcessUtils.runProcess(
+                listOf("pgrep", "oahd"),
+                File(installDir),
+                ProcessUtils.RunOptions(isSilent = true),
+            )?.let { it.exitCode != 0 } ?: true
+        if (!isRosettaMissing) {
+            println("Rosetta 2 is already installed")
+            return
+        }
+        println("Rosetta 2 is missing, installing...")
+        runProcessOrFail(listOf("softwareupdate", "--install-rosetta", "--agree-to-license"), File(installDir))
+    }
+}
+
+class WindowsInstaller : AwsCliInstaller {
+    override fun getInstallDir(version: String) = """$toolsDir\aws-cli"""
+
+    override fun isInstalled(version: String): Boolean {
+        val installDir = File(getInstallDir(version))
+        return installDir.isDirectory() && installDir.listFiles()?.isNotEmpty() ?: false
+    }
+
+    override fun install(version: String) {
+        val installDir = getInstallDir(version).also { File(it).mkdirs() }
+        val isInstalled =
+            ProcessUtils.runProcess(
+                listOf("aws", "--version"),
+                File(installDir),
+                ProcessUtils.RunOptions(isSilent = true),
+            )?.exitCode == 0
+        if (isInstalled) {
+            val isNotTeamCityTool = File(installDir).listFiles()?.isEmpty() ?: true
+            if (isNotTeamCityTool) {
+                println(
+                    "AWS CLI is already installed on this agent, but not as a TeamCity tool. On Windows only one version " +
+                            "of AWS CLI can be installed at the time, skipping installation..."
+                )
+                exitProcess(0)
+            }
+        }
+
+        val url = "https://awscli.amazonaws.com/AWSCLIV2-$version.msi"
+        val temp = prepareTempDir()
+
+        println("Downloading AWS CLI from $url to ${temp.absolutePath}")
+        val msi = downloadFile(url, temp)
+        val logFile = "${temp.absolutePath}\\aws-cli-${version}-install-log.txt"
+        ProcessUtils.runProcess(
+            listOf(
+                "msiexec.exe", "/i", "\"${msi.absolutePath}\"", "AWSCLIV2=\"$installDir\"", "/quiet", "/norestart",
+                "/l*v", "\"$logFile\""
+            ), temp
+        ).let {
+            if (it?.exitCode != 0) {
+                moveMsiExecLogsToBuildLog(logFile)
+                System.err.println(
+                    """
+                    Installation failed with exit code ${it?.exitCode}.
+                    Ensure that the agent does not have AWS CLI installed in a different location and that
+                    it has the necessary administrative permissions to install third party software
+                    """.trimIndent()
+                )
+                exitProcess(it?.exitCode ?: 1)
+            }
+        }
+        updateEnvPath(version)
+        cleanUpAndLogSuccess(temp, version)
+        File(logFile).let { if (it.exists()) { FileUtils.delete(it) } }
+    }
+
+    private fun moveMsiExecLogsToBuildLog(logFilePath: String) = runCatching {
+        val logFile = File(logFilePath)
+        if (!logFile.exists() || !logFile.isFile) {
+            return@runCatching
+        }
+        FileUtils.readLines(logFile, "UTF-16").let { lines ->
+            if (lines.isEmpty()) {
+                return@let
+            }
+            val blockName = "msiexec log"
+            println(asString(BLOCK_OPENED, mapOf("name" to blockName)))
+            lines.forEach { line -> println(line) }
+            println(asString(BLOCK_CLOSED, mapOf("name" to blockName)))
+        }
+        FileUtils.delete(logFile)
+    }
+
+    override fun updateEnvPath(version: String) = setEnvPath("""${getInstallDir(version)};${System.getenv("PATH")}""")
+}
+
+fun fetchAwsCliVersions(): List<String> {
+    val url = "https://raw.githubusercontent.com/aws/aws-cli/refs/heads/v2/CHANGELOG.rst"
+    println("Fetching available AWS CLI versions from $url")
+    return URL(url).readText().lines().filter { it.matches(versionRegex) }.toList()
+}
+
+fun prepareTempDir() = File(getTempDirectory(), "aws-cli-installer-temp")
+    .also {
+        if (it.exists()) {
+            println("Deleting ${it.absolutePath}")
+            it.deleteRecursively()
+        }
+    }.also { it.mkdirs() }
+
+fun runProcessOrFail(command: List<String>, workingDir: File) {
+    ProcessUtils.runProcess(command, workingDir)
+        .let { if (it?.exitCode != 0) exitProcess(it?.exitCode ?: 1) }
+}
+
+fun cleanUpAndLogSuccess(temp: File, version: String) {
+    println("Deleting temp directory ${temp.absolutePath}")
+    temp.deleteRecursively()
+    println("Successfully installed AWS CLI $version")
+}
+
+fun downloadFile(url: String, dir: File): File {
+    val zip = File(dir, url.substringAfterLast("/"))
+    copyURLToFile(URL(url), zip)
+    return zip
+}
+
+fun setEnvPath(value: String) {
+    val message = asString(
+        BUILD_SET_PARAMETER,
+        mapOf(
+            "name" to "env.PATH",
+            "value" to value
+        )
+    )
+    println(message)
+}
+
+object ProcessUtils {
+    data class ProcessResult(val exitCode: Int, val stdout: String, val stderr: String)
+
+    data class RunOptions(
+        val isSilent: Boolean = false,
+        val executionTimeout: Duration = 1.hours,
+    )
+
+    fun runProcess(
+        command: List<String>,
+        workingDir: File,
+        options: RunOptions = RunOptions(),
+    ): ProcessResult? = runBlocking {
+        if (!options.isSilent) {
+            println("Starting: ${command.joinToString(" ")}")
+            println("In directory: ${workingDir.absolutePath}")
+        }
+        try {
+            val process = ProcessBuilder(command).directory(workingDir).redirectErrorStream(false).start()
+
+            val stdoutDeferred = readLines(process.inputStream, options.isSilent, false)
+            val stderrDeferred = readLines(process.errorStream, options.isSilent, true)
+
+            if (!process.waitFor(options.executionTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)) {
+                if (!options.isSilent) {
+                    System.err.println("Execution timeout exceeded")
+                }
+                process.destroy()
+                process.waitFor(5, TimeUnit.SECONDS)
+                if (process.isAlive) {
+                    process.destroyForcibly()
+                }
+                return@runBlocking null
+            }
+            val stdout = stdoutDeferred.await()
+            val stderr = stderrDeferred.await()
+
+            ProcessResult(process.exitValue(), stdout, stderr)
+        } catch (e: Throwable) {
+            if (!options.isSilent) {
+                System.err.println("Failed to execute command")
+                System.err.println(e.stackTraceToString())
+            }
+            return@runBlocking null
+        }
+    }
+
+    private fun CoroutineScope.readLines(inputStream: InputStream, isSilent: Boolean, isError: Boolean) =
+        async(Dispatchers.IO) {
+            val lines = mutableListOf<String>()
+            inputStream.bufferedReader().forEachLine { line ->
+                lines.add(line)
+                if (!isSilent) {
+                    if (isError) System.err.println(line) else println(line)
+                }
+            }
+            lines.joinToString(System.lineSeparator())
+        }
+}
+
+val toolsDir: String
+    get() = requiredInput("installation_path")
+        .ifBlank { File(".").absolutePath }
+
+val versionRegex: Regex
+    get() = Regex("^(\\d+\\.\\d+\\.\\d+)$")
+
+fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")
+
+fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
+    fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+        println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+
+    fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+    fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+
+    writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
+    writeDebug(it.stackTraceToString())
+    exitProcess(1)
+}

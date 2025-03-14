@@ -1,0 +1,53 @@
+name: jetbrains/create-file
+version: 1.0.0
+description: |
+  Creates a text file with the specified content at the given path. 
+  The directory is created automatically if it does not exist.
+inputs:
+  - env.input_path:
+      type: text
+      required: true
+      label: Path
+      description: |
+        The path where a new file is created. 
+        Accepts absolute (/var/log/output.txt, C:\logs\output.txt) and relative to the agent working directory (logs/file.txt) paths.
+  - env.input_content:
+      type: text
+      required: true
+      label: Content
+      description: |
+        The contents of a newly created file.
+steps:
+  - name: Create Text File
+    kotlin-script: |-
+      @file:Repository("https://download.jetbrains.com/teamcity-repository/")
+      @file:DependsOn("org.jetbrains.teamcity:serviceMessages:2024.12")
+      
+      import java.io.File
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
+      
+      runCatchingWithLogging {
+          createTextFile(requiredInput("path"), requiredInput("content"))
+      }
+      
+      fun createTextFile(filePath: String, content: String) = File(filePath).run {
+          parentFile?.mkdirs() // Ensure directories exist
+          writeText(content)
+          println("File created successfully: $absolutePath")
+      }
+      
+      fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")
+      
+      fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
+          fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+              println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+      
+          fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+          fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+      
+          writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
+          writeDebug(it.stackTraceToString())
+          kotlin.system.exitProcess(1)
+      }

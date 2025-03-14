@@ -1,0 +1,23 @@
+name: jetbrains/set-build-status
+version: 1.0.0
+description: |
+  Sets the build status to successful or failed. The status persists after the build completes.
+inputs:
+  - env.input_status:
+      type: select
+      required: true
+      label: Build status
+      options:
+        - SUCCESS
+        - FAILURE
+  - env.input_text:
+      type: text
+      required: true
+      label: Text
+      default: |
+        The original status text was {build.status.text}.
+      description: |
+        The custom text for a new build status. Use the {build.status.text} placeholder for the default status text.
+steps:
+  - name: Set build status
+    kotlin-script: !include src.main.kts
