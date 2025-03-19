@@ -5,6 +5,8 @@ import recipes.*
 version = "2024.12"
 
 project {
+    buildType(RecipesTests)
+
     buildType(AddToPath)
     buildType(CreateFileAndPublish)
     buildType(DownloadFileAndPublish)
@@ -19,5 +21,5 @@ project {
     buildType(TagBuild)
     buildType(TagCurrentBuild)
     buildType(UntagCurrentBuild)
+    buildType(UploadToS3)
 }
-

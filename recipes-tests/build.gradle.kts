@@ -11,8 +11,13 @@ repositories {
 }
 
 dependencies {
+    testImplementation("software.amazon.awssdk:s3:2.30.38")
+    testImplementation("software.amazon.awssdk:auth:2.30.38")
+
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
+
+    testImplementation("org.testcontainers:minio:1.20.6")
 }
 
 val kotlinVersionForTests = "2.1.10"

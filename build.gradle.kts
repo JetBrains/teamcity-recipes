@@ -6,7 +6,9 @@ recipes {
     setOutputPath(".teamcity/pluginData/_Self/metaRunners/")
 
     add("src/add-to-path")
+    add("src/aws/download-from-s3")
     add("src/aws/install-aws-cli")
+    add("src/aws/upload-to-s3")
     add("src/build-godot-game")
     add("src/create-file")
     add("src/download-file")
