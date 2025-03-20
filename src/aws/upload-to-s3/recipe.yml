@@ -5,7 +5,7 @@ description: |
   If a directory is selected, TeamCity will upload its contents directly to the target path 
   without creating a corresponding directory in S3.
   
-  AWS credentials and AWS region can be provided directly via the recipe inputs.
+  AWS credentials and AWS region can be provided in recipe settings.
   If credentials are not specified, the default AWS credentials provider chain will be used.
   Alternatively, the "Amazon Web Services (AWS)" connection can be configured at the project level and accessed via the "AWS Credentials" build feature.
 inputs:

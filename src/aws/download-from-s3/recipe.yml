@@ -4,7 +4,7 @@ description: |
   Retrieves an object from AWS S3 and saves it to a specified local destination. 
   Allows you to download both individual files and AWS S3 folders.
   
-  AWS credentials and AWS region can be provided directly via the recipe inputs.
+  AWS credentials and AWS region can be provided in recipe settings.
   If credentials are not specified, the default AWS credentials provider chain will be used.
   Alternatively, the "Amazon Web Services (AWS)" connection can be configured at the project level and accessed via the "AWS Credentials" build feature.
 inputs:
