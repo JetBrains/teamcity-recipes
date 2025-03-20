@@ -19,15 +19,15 @@ abstract class AwsS3Test : RecipeTest() {
 
     protected lateinit var s3Client: S3Client
 
-    private val user = "minioadmin"
-    private val password = "minioadmin"
+    protected val user = "minioadmin"
+    protected val password = "minioadmin"
 
     private var container: MinIOContainer = MinIOContainer("minio/minio")
         .withUserName(user)
         .withPassword(password)
 
-    private val region = Region.EU_WEST_3
-    private val endpoint: String
+    protected val region = Region.EU_WEST_3
+    protected val endpoint: String
         get() = "http://localhost:${container.getMappedPort(9000)}"
 
     override suspend fun beforeSpec(spec: Spec) {

@@ -4,6 +4,10 @@ description: |
   Uploads a local file or directory to the AWS S3 bucket. 
   If a directory is selected, TeamCity will upload its contents directly to the target path 
   without creating a corresponding directory in S3.
+  
+  AWS credentials and AWS region can be provided directly via the recipe inputs.
+  If credentials are not specified, the default AWS credentials provider chain will be used.
+  Alternatively, the "Amazon Web Services (AWS)" connection can be configured at the project level and accessed via the "AWS Credentials" build feature.
 inputs:
   - env.input_source:
       type: text
@@ -18,6 +22,24 @@ inputs:
       label: Target
       description: |
         The destination S3 path (e.g. s3://bucket/path/to/file).
+  - env.input_aws_access_key_id:
+      type: password
+      required: false
+      label: Access key ID
+      description: |
+        The optional AWS account access key ID.
+  - env.input_aws_secret_access_key:
+      type: password
+      required: false
+      label: Secret access key
+      description: |
+        The optional AWS account secret access key.
+  - env.input_aws_region:
+      type: text
+      required: false
+      label: AWS region
+      description: |
+        The optional AWS region.
 steps:
   - name: Upload to S3
     kotlin-script: !include src.main.kts

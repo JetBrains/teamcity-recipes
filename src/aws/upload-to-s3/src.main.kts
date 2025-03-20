@@ -8,7 +8,10 @@
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
@@ -104,14 +107,24 @@ fun createS3Client(): S3Client {
             .serviceConfiguration { it.pathStyleAccessEnabled(true) }
     }
     return s3Builder
-        .credentialsProvider(DefaultCredentialsProvider.create())
-        .withAwsRegionFromEnv()
+        .credentialsProvider(createCredentialsProvider())
+        .withAwsRegion()
         .build()
 }
 
-fun S3ClientBuilder.withAwsRegionFromEnv(): S3ClientBuilder {
-    System.getenv("AWS_DEFAULT_REGION")?.let { region(Region.of(it)) }
-    System.getenv("AWS_REGION")?.let { region(Region.of(it)) }
+fun createCredentialsProvider(): AwsCredentialsProvider {
+    val accessKeyInput = input("aws_access_key_id")
+    val secretKeyInput = input("aws_secret_access_key")
+    if (accessKeyInput != null && secretKeyInput != null) {
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyInput, secretKeyInput))
+    }
+    return DefaultCredentialsProvider.create()
+}
+
+fun S3ClientBuilder.withAwsRegion(): S3ClientBuilder {
+    input("aws_region")?.let { return region(Region.of(it)) }
+    System.getenv("AWS_REGION")?.let { return region(Region.of(it)) }
+    System.getenv("AWS_DEFAULT_REGION")?.let { return region(Region.of(it)) }
     return this
 }
 
@@ -160,6 +173,7 @@ fun parseTarget(path: String): Pair<String, String> {
 fun Path.ensureForwardSlashes(): String = toString().replace("\\", "/")
 fun String.ensureTrailingSlash() = if (this.isBlank()) this else removeSuffix("/").removeSuffix("\\") + "/"
 
+fun input(name: String): String? = System.getenv("input_$name")
 fun requiredInput(name: String, errorMessage: String) = System.getenv("input_$name") ?: error(errorMessage)
 fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
     println(asString(MESSAGE, mapOf("text" to text, *attributes)))

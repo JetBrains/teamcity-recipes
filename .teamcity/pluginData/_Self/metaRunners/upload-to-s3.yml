@@ -4,6 +4,10 @@ description: |
   Uploads a local file or directory to the AWS S3 bucket. 
   If a directory is selected, TeamCity will upload its contents directly to the target path 
   without creating a corresponding directory in S3.
+  
+  AWS credentials and AWS region can be provided directly via the recipe inputs.
+  If credentials are not specified, the default AWS credentials provider chain will be used.
+  Alternatively, the "Amazon Web Services (AWS)" connection can be configured at the project level and accessed via the "AWS Credentials" build feature.
 inputs:
   - env.input_source:
       type: text
@@ -18,6 +22,24 @@ inputs:
       label: Target
       description: |
         The destination S3 path (e.g. s3://bucket/path/to/file).
+  - env.input_aws_access_key_id:
+      type: password
+      required: false
+      label: Access key ID
+      description: |
+        The optional AWS account access key ID.
+  - env.input_aws_secret_access_key:
+      type: password
+      required: false
+      label: Secret access key
+      description: |
+        The optional AWS account secret access key.
+  - env.input_aws_region:
+      type: text
+      required: false
+      label: AWS region
+      description: |
+        The optional AWS region.
 steps:
   - name: Upload to S3
     kotlin-script: |-
@@ -31,7 +53,10 @@ steps:
       import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
       import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
       import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
+      import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+      import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
       import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+      import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
       import software.amazon.awssdk.core.sync.RequestBody
       import software.amazon.awssdk.regions.Region
       import software.amazon.awssdk.services.s3.S3Client
@@ -127,14 +152,24 @@ steps:
                   .serviceConfiguration { it.pathStyleAccessEnabled(true) }
           }
           return s3Builder
-              .credentialsProvider(DefaultCredentialsProvider.create())
-              .withAwsRegionFromEnv()
+              .credentialsProvider(createCredentialsProvider())
+              .withAwsRegion()
               .build()
       }
       
-      fun S3ClientBuilder.withAwsRegionFromEnv(): S3ClientBuilder {
-          System.getenv("AWS_DEFAULT_REGION")?.let { region(Region.of(it)) }
-          System.getenv("AWS_REGION")?.let { region(Region.of(it)) }
+      fun createCredentialsProvider(): AwsCredentialsProvider {
+          val accessKeyInput = input("aws_access_key_id")
+          val secretKeyInput = input("aws_secret_access_key")
+          if (accessKeyInput != null && secretKeyInput != null) {
+              return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyInput, secretKeyInput))
+          }
+          return DefaultCredentialsProvider.create()
+      }
+      
+      fun S3ClientBuilder.withAwsRegion(): S3ClientBuilder {
+          input("aws_region")?.let { return region(Region.of(it)) }
+          System.getenv("AWS_REGION")?.let { return region(Region.of(it)) }
+          System.getenv("AWS_DEFAULT_REGION")?.let { return region(Region.of(it)) }
           return this
       }
       
@@ -183,6 +218,7 @@ steps:
       fun Path.ensureForwardSlashes(): String = toString().replace("\\", "/")
       fun String.ensureTrailingSlash() = if (this.isBlank()) this else removeSuffix("/").removeSuffix("\\") + "/"
       
+      fun input(name: String): String? = System.getenv("input_$name")
       fun requiredInput(name: String, errorMessage: String) = System.getenv("input_$name") ?: error(errorMessage)
       fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
           println(asString(MESSAGE, mapOf("text" to text, *attributes)))

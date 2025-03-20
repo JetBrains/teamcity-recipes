@@ -65,28 +65,36 @@ abstract class RecipeTest : StringSpec() {
     }
 
     protected inner class Script(private val content: String) {
-        private val envVariables = HashMap<String, String>()
+        var workingDir: Path? = null
+        val env = HashMap<String, String>()
 
         fun withInput(name: String, value: String) =
             withEnv("input_$name", value)
 
         fun withEnv(name: String, value: String): Script {
-            envVariables[name] = value
+            env[name] = value
             return this
         }
 
         fun withEnv(env: Map<String, String>): Script {
-            envVariables.putAll(env)
+            this.env.clear()
+            this.env.putAll(env)
+            return this
+        }
+
+        fun withWorkingDir(dir: Path): Script {
+            this.workingDir = dir
             return this
         }
 
         fun eval(): ScriptResult {
             val tmpScriptFile = tempFile("recipe.main.kts", content)
             val exec = if (System.getProperty("os.name").lowercase().contains("windows")) "kotlin.bat" else "kotlin"
-            val kotlin = "build/kotlin-compiler/kotlinc/bin/$exec"
-            val process = ProcessBuilder(kotlin, tmpScriptFile.absolutePathString())
+            val kotlin = Paths.get("build/kotlin-compiler/kotlinc/bin/$exec")
+            val process = ProcessBuilder(kotlin.absolutePathString(), tmpScriptFile.absolutePathString())
+                .apply { if (workingDir != null) directory(workingDir!!.toFile()) }
                 .redirectErrorStream(false)
-                .apply { environment().putAll(envVariables) }
+                .apply { environment().putAll(env) }
                 .start()
             val stdout = process.inputStream.bufferedReader().readText().trim()
             val stderr = process.errorStream.bufferedReader().readText().trim()

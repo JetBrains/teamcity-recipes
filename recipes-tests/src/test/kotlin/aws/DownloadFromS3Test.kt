@@ -6,6 +6,7 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import java.nio.file.Files
@@ -141,6 +142,44 @@ class DownloadFromS3Test : AwsS3Test() {
             }
         }
 
+        "should download file when ./file relative path is used" {
+            // arrange
+            tempFile(name = "file", content = "text").also { bucket.putObject(it, key = "file") }
+            val target = tempDir("target")
+                .also { Files.list(it).toList() shouldHaveSize 0 }
+            // act
+            val result = readScript()
+                .withWorkingDir(target)
+                .withS3Source("$bucket/file")
+                .withTarget("./file")
+                .eval()
+            // assert
+            result.shouldHaveZeroExitCode()
+            with(target) {
+                this shouldContainOnly "file"
+                resolve("file").readText() shouldBe "text"
+            }
+        }
+
+        "should download file when . relative path is used" {
+            // arrange
+            tempFile(name = "file", content = "text").also { bucket.putObject(it, key = "file") }
+            val target = tempDir("target")
+                .also { Files.list(it).toList() shouldHaveSize 0 }
+            // act
+            val result = readScript()
+                .withWorkingDir(target)
+                .withS3Source("$bucket/file")
+                .withTarget(".")
+                .eval()
+            // assert
+            result.shouldHaveZeroExitCode()
+            with(target) {
+                this shouldContainOnly "file"
+                resolve("file").readText() shouldBe "text"
+            }
+        }
+
         "should download directory content" {
             // arrange
             val target = tempDir("target")
@@ -238,6 +277,30 @@ class DownloadFromS3Test : AwsS3Test() {
             with(target) {
                 this shouldContainOnly listOf("sub")
                 resolve("sub").isDirectory() shouldBe true
+            }
+        }
+
+        "should download with credentials and AWS region from inputs" {
+            // arrange
+            val target = tempDir("target")
+            tempFile(content = "text").also { bucket.putObject(it, key = "file") }
+            // act
+            val result = readScript()
+                .withEnv(mapOf("AWS_ENDPOINT" to endpoint))
+                .withS3Source("$bucket/file")
+                .withTarget(target)
+                .withInput("aws_access_key_id", user)
+                .withInput("aws_secret_access_key", password)
+                .withInput("aws_region", region.id())
+                .also { it.env shouldNotContainKey "AWS_ACCESS_KEY_ID" }
+                .also { it.env shouldNotContainKey "AWS_SECRET_ACCESS_KEY" }
+                .also { it.env shouldNotContainKey "AWS_REGION" }
+                .eval()
+            // assert
+            result.shouldHaveZeroExitCode()
+            with(target) {
+                this shouldContainOnly "file"
+                resolve("file").readText() shouldBe "text"
             }
         }
 

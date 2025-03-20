@@ -5,6 +5,7 @@ import io.kotest.core.spec.Spec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.collections.shouldContainOnly
+import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldEndWith
@@ -160,6 +161,23 @@ class UploadToS3Test : AwsS3Test() {
             with(bucket.listAllObjects()) {
                 this shouldContainOnlyKey file.name
                 this withKey file.name inBucket bucket shouldHaveContent "new text"
+            }
+        }
+
+        "should upload file when ./file relative path is used" {
+            // arrange
+            val file = tempDir("tmp") { file("file", "text") }.resolve("file")
+            // act
+            val result = readScript()
+                .withWorkingDir(file.parent)
+                .withSource("./file")
+                .withS3Target(bucket)
+                .eval()
+            // assert
+            result.shouldHaveZeroExitCode()
+            with(bucket.listAllObjects()) {
+                this shouldContainOnlyKey "file"
+                this withKey "file" inBucket bucket shouldHaveContent "text"
             }
         }
 
@@ -339,6 +357,29 @@ class UploadToS3Test : AwsS3Test() {
                 this shouldContainOnlyKeys listOf("dir/b", "dir/c/", "dir/d", "dir/e/f/")
                 this withKey "dir/c/" shouldBe CorrectS3Dir
                 this withKey "dir/e/f/" shouldBe CorrectS3Dir
+            }
+        }
+
+        "should upload with credentials and AWS region from inputs" {
+            // arrange
+            val file = tempFile(content = "text")
+            // act
+            val result = readScript()
+                .withEnv(mapOf("AWS_ENDPOINT" to endpoint))
+                .withSource(file)
+                .withS3Target(bucket)
+                .withInput("aws_access_key_id", user)
+                .withInput("aws_secret_access_key", password)
+                .withInput("aws_region", region.id())
+                .also { it.env shouldNotContainKey "AWS_ACCESS_KEY_ID" }
+                .also { it.env shouldNotContainKey "AWS_SECRET_ACCESS_KEY" }
+                .also { it.env shouldNotContainKey "AWS_REGION" }
+                .eval()
+            // assert
+            result.shouldHaveZeroExitCode()
+            with(bucket.listAllObjects()) {
+                this shouldContainOnlyKey file.name
+                this withKey file.name inBucket bucket shouldHaveContent "text"
             }
         }
 
