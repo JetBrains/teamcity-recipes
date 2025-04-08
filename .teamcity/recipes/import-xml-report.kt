@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object ImportJUnitReport : BuildType({
     name = "ImportJUnitReport"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -44,4 +48,6 @@ object ImportJUnitReport : BuildType({
             input("import_path", "./reports/report.xml")
         }
     }
+
+    enableVcsTrigger()
 })

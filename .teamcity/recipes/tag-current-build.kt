@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object TagCurrentBuild : BuildType({
     name = "TagCurrentBuild"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -21,4 +25,6 @@ object TagCurrentBuild : BuildType({
             input("tags", tags)
         }
     }
+
+    enableVcsTrigger()
 })

@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object SetBuildStatus : BuildType({
     name = "SetBuildStatus"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -18,4 +22,6 @@ object SetBuildStatus : BuildType({
             input("text", "Custom success message")
         }
     }
+
+    enableVcsTrigger()
 })

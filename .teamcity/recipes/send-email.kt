@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object SendEmail : BuildType({
     name = "SendEmail"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -19,4 +23,6 @@ object SendEmail : BuildType({
             input("message", "Hello from recipe")
         }
     }
+
+    enableVcsTrigger()
 })

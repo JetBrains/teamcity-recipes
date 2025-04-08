@@ -5,6 +5,10 @@ import recipes.*
 version = "2024.12"
 
 project {
+    vcsRoot(RecipesVscRoot)
+
+    buildType(RecipesTests)
+
     buildType(AddToPath)
     buildType(CreateFileAndPublish)
     buildType(DownloadFileAndPublish)
@@ -19,5 +23,5 @@ project {
     buildType(TagBuild)
     buildType(TagCurrentBuild)
     buildType(UntagCurrentBuild)
+    buildType(UploadToS3AndDownloadFromS3)
 }
-

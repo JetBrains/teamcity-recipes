@@ -1,13 +1,17 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
 
 object InstallAwsCLI : BuildType({
     name = "InstallAwsCLI"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -22,4 +26,6 @@ object InstallAwsCLI : BuildType({
             scriptContent = "aws help"
         }
     }
+
+    enableVcsTrigger()
 })

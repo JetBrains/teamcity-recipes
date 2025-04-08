@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object PinBuild : BuildType({
     name = "PinBuild"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -20,5 +24,7 @@ object PinBuild : BuildType({
             input("access_token", "credentialsJSON:1707ebb7-f822-401e-bc54-337c32c3f029")
         }
     }
+
+    enableVcsTrigger()
 })
 

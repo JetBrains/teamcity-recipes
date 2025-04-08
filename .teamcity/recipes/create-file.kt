@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object CreateFileAndPublish : BuildType({
     name = "CreateFileAndPublish"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -23,4 +27,6 @@ object CreateFileAndPublish : BuildType({
             input("path_to_publish", "./created/")
         }
     }
+
+    enableVcsTrigger()
 })

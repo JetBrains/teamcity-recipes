@@ -2,6 +2,7 @@ object Recipes {
     const val AddToPath = "jetbrains/add-to-path@1.0.0"
     const val CreateFile = "jetbrains/create-file@1.0.0"
     const val DownloadFile = "jetbrains/download-file@1.0.0"
+    const val DownloadFromS3 = "jetbrains/download-from-s3@1.0.0"
     const val ImportXmlReport = "jetbrains/import-xml-report@1.0.0"
     const val InstallAwsCli = "jetbrains/install-aws-cli@1.0.0"
     const val PinBuild = "jetbrains/pin-build@1.0.0"
@@ -14,4 +15,5 @@ object Recipes {
     const val TagBuild = "jetbrains/tag-build@1.0.0"
     const val TagCurrentBuild = "jetbrains/tag-current-build@1.0.0"
     const val UntagCurrentBuild = "jetbrains/untag-current-build@1.0.0"
+    const val UploadToS3 = "jetbrains/upload-to-s3@1.0.0"
 }

@@ -16,15 +16,6 @@ Recipes are custom build steps, and as such, are added to build configurations i
 
 ## Recipes catalog
 
-### [tag-current-build](src/tag-current-build/README.md) / [untag-current-build](src/untag-current-build/README.md) (Service message)
-Tags the current build.
-If you need to tag specific builds by their IDs, use the 'tag-build' recipe instead.
-
-### [tag-build](src/tag-build/README.md) (REST API)
-Tags a specific TeamCity build. Locates the build to tag by the given build ID.
-To tag the current build instead, use the 'tag-current-build' recipe.
-This recipe utilizes TeamCity REST API and requires Token-Based Authentication credentials.
-
 ### [add-to-path](src/add-to-path/README.md) (Service message)
 Temporarily prepends a specified directory to the PATH environment variable during the build process, ensuring its executables take precedence.
 
@@ -38,6 +29,10 @@ The directory is created automatically if it does not exist.
 ### [download-file](src/download-file/README.md) (Kotlin Script)
 Downloads a file from the specified URL to the given directory.
 Supports bearer authentication, as well as custom headers.
+
+### [download-from-s3](src/aws/download-from-s3/README.md) (Kotlin Script)
+Retrieves an object from AWS S3 and saves it to a specified local destination.
+Allows you to download both individual files and AWS S3 folders.
 
 ### [install-aws-cli](src/aws/install-aws-cli/README.md) (Kotlin Script)
 Installs the AWS Command Line Interface (CLI) on the agent, allowing subsequent build steps to call the “aws” command.
@@ -71,6 +66,20 @@ If the variable does not exist in the environment, it will be **created**.
 
 ### [setup-node](src/setup-node/README.md)
 Installs Node.js on the agent, allowing subsequent build steps to call the “node” command.
+
+### [tag-current-build](src/tag-current-build/README.md) / [untag-current-build](src/untag-current-build/README.md) (Service message)
+Tags the current build.
+If you need to tag specific builds by their IDs, use the 'tag-build' recipe instead.
+
+### [tag-build](src/tag-build/README.md) (REST API)
+Tags a specific TeamCity build. Locates the build to tag by the given build ID.
+To tag the current build instead, use the 'tag-current-build' recipe.
+This recipe utilizes TeamCity REST API and requires Token-Based Authentication credentials.
+
+### [upload-to-s3](src/aws/upload-to-s3/README.md) (Kotlin Script)
+Uploads a local file or directory to the AWS S3 bucket.
+If a directory is selected, the recipe will upload its contents directly to the target path
+without creating a corresponding directory in S3.
 
 ## Dev quickstart
 To build recipes run:

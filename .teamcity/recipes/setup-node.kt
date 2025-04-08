@@ -1,13 +1,17 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
 
 object SetupNode : BuildType({
     name = "SetupNode"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -34,4 +38,6 @@ object SetupNode : BuildType({
             scriptContent = "node --version"
         }
     }
+
+    enableVcsTrigger()
 })

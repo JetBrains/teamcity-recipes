@@ -1,12 +1,16 @@
 package recipes
 
 import Recipes
+import RecipesVscRoot
 import enableMatrixBuild
+import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 
 object SendSlackMessage : BuildType({
     name = "SendSlackMessage"
+
+    vcs { root(RecipesVscRoot) }
 
     enableMatrixBuild()
 
@@ -19,4 +23,6 @@ object SendSlackMessage : BuildType({
             input("message", "Hello from recipe")
         }
     }
+
+    enableVcsTrigger()
 })
