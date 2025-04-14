@@ -37,9 +37,8 @@ import java.nio.charset.Charset
 runCatchingWithLogging {
     val version = requiredInput("version")
     val installationPath = input("installation_path")
-        .ifBlank { File(".").absolutePath }
-        .let { File(it) }
-        .normalize()
+        .ifBlank { "." }
+        .let { File(it).canonicalFile }
     Recipe.installNode(version, installationPath, OS.detect(), Arch.detect())
 }
 
