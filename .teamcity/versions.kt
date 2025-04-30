@@ -11,6 +11,7 @@ object Recipes {
     const val SendSlackMessage = "jetbrains/send-slack-message@1.0.0"
     const val SetBuildStatus = "jetbrains/set-build-status@1.0.0"
     const val SetEnvironmentVariable = "jetbrains/set-environment-variable@1.0.0"
+    const val SetupBazelisk = "jetbrains/setup-bazelisk@1.0.0"
     const val SetupNode = "jetbrains/setup-node@1.0.0"
     const val TagBuild = "jetbrains/tag-build@1.0.0"
     const val TagCurrentBuild = "jetbrains/tag-current-build@1.0.0"

@@ -19,6 +19,7 @@ recipes {
     add("src/send-slack-message")
     add("src/set-build-status")
     add("src/set-environment-variable")
+    add("src/setup-bazelisk")
     add("src/setup-node")
     add("src/tag-build")
     add("src/tag-current-build")

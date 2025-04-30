@@ -64,6 +64,9 @@ Sets the build status to successful or failed. The status persists after the bui
 Sets an **environment variable**.  
 If the variable does not exist in the environment, it will be **created**.
 
+### [setup-bazelisk](src/setup-bazelisk/README.md)
+Installs bazelisk on the agent, allowing subsequent build steps to call the “bazel” command.
+
 ### [setup-node](src/setup-node/README.md)
 Installs Node.js on the agent, allowing subsequent build steps to call the “node” command.
 

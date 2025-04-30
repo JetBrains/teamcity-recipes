@@ -19,6 +19,7 @@ project {
     buildType(SendSlackMessage)
     buildType(SetBuildStatus)
     buildType(SetEnvironmentVariable)
+    buildType(SetupBazelisk)
     buildType(SetupNode)
     buildType(TagBuild)
     buildType(TagCurrentBuild)

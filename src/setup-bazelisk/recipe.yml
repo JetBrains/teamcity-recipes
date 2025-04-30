@@ -1,0 +1,24 @@
+name: jetbrains/setup-bazelisk
+version: 1.0.0
+description: |
+  Installs Bazelisk on the agent, allowing subsequent build steps to call the “bazel” command.
+inputs:
+  - env.input_version:
+      type: text
+      required: true
+      label: Bazelisk Version
+      description: |
+        The bazelisk version in the “major”, “major.minor”, or “major.minor.patch” format. Examples: “1”, “1.26”, “1.26.0”.
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        The installation path for the bazelisk on the agent machine. 
+        Accepts absolute and relative to the agent checkout directory paths. 
+        By default, the agent’s tools directory is used.
+      default: "%teamcity.agent.tools.dir%"
+
+steps:
+  - name: Setup Bazelisk
+    kotlin-script: !include src.main.kts

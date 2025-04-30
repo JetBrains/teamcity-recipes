@@ -1,0 +1,302 @@
+name: jetbrains/setup-bazelisk
+version: 1.0.0
+description: |
+  Installs Bazelisk on the agent, allowing subsequent build steps to call the “bazel” command.
+inputs:
+  - env.input_version:
+      type: text
+      required: true
+      label: Bazelisk Version
+      description: |
+        The bazelisk version in the “major”, “major.minor”, or “major.minor.patch” format. Examples: “1”, “1.26”, “1.26.0”.
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        The installation path for the bazelisk on the agent machine. 
+        Accepts absolute and relative to the agent checkout directory paths. 
+        By default, the agent’s tools directory is used.
+      default: "%teamcity.agent.tools.dir%"
+
+steps:
+  - name: Setup Bazelisk
+    kotlin-script: |-
+      @file:Repository("https://repo.maven.apache.org/maven2/")
+      @file:DependsOn("org.apache.commons:commons-lang3:3.17.0")
+      @file:DependsOn("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+      @file:DependsOn("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+      @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+      
+      @file:Repository("https://download.jetbrains.com/teamcity-repository/")
+      @file:DependsOn("org.jetbrains.teamcity:serviceMessages:2024.12")
+      
+      import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+      import com.fasterxml.jackson.annotation.JsonProperty
+      import com.fasterxml.jackson.databind.DeserializationFeature
+      import com.fasterxml.jackson.databind.ObjectMapper
+      import com.fasterxml.jackson.module.kotlin.KotlinModule
+      import com.fasterxml.jackson.module.kotlin.readValue
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.BUILD_SET_PARAMETER
+      import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
+      import kotlinx.coroutines.Dispatchers
+      import kotlinx.coroutines.runBlocking
+      import kotlinx.coroutines.withContext
+      import kotlinx.coroutines.delay
+      import org.apache.commons.lang3.SystemUtils
+      import java.net.HttpURLConnection
+      import java.net.URI
+      import java.net.URL
+      import java.nio.charset.StandardCharsets
+      import java.nio.file.*
+      import java.util.Random
+      import java.util.concurrent.TimeUnit
+      import kotlin.contracts.ExperimentalContracts
+      import kotlin.contracts.InvocationKind
+      import kotlin.contracts.contract
+      import kotlin.coroutines.cancellation.CancellationException
+      import kotlin.io.path.*
+      import kotlin.math.min
+      
+      runCatchingWithLogging {
+          val version = requiredInput("version")
+          val installationPath = input("installation_path")
+              .ifBlank { "." }
+              .let { Path(it).toAbsolutePath().normalize() }
+      
+          runBlocking {
+              installBazelisk(version, installationPath, OS.detect(), Arch.detect())
+          }
+      }
+      
+      suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arch: Arch) {
+          val bazeliskVersion = BazeliskVersionManager.tryGetBazeliskVersion(version, os, arch)
+      
+          val installDirectory = installationPath.resolve("bazelisk-${bazeliskVersion.version}-${os}-${arch}")
+          val executableName = "bazel" + if (os == OS.Windows) ".exe" else ""
+          val installPath = installDirectory.resolve(executableName)
+          val tempFile = installDirectory.resolve("${executableName}.tmp")
+      
+          if (installPath.exists()) {
+              println("Bazelisk ${bazeliskVersion.version} is already installed to $installDirectory")
+              updateEnvPath(installDirectory)
+              return
+          }
+      
+          println("Downloading ${bazeliskVersion.downloadUrl} to $installPath")
+          try {
+              installDirectory.createDirectories()
+      
+              retry { bazeliskVersion.downloadUrl.downloadTo(tempFile) }
+              println("Downloaded to $tempFile")
+      
+              tempFile.toFile().setExecutable(true)
+              println("Set binary executable flag")
+      
+              move(tempFile, installPath)
+              println("Moved to $installDirectory")
+          } finally {
+              tempFile.deleteIfExists()
+          }
+      
+          updateEnvPath(installDirectory)
+      }
+      
+      object BazeliskVersionManager {
+          private val apiUrl = "https://api.github.com/repos/bazelbuild/bazelisk/releases?per_page=100&page=1"
+      
+          suspend fun tryGetBazeliskVersion(versionPrefix: String, os: OS, arch: Arch): BazeliskVersionDownloadInfo {
+              val json = Retry().retry { downloadJson(apiUrl) }
+              val releases = parseJson(json)
+      
+              val release = releases.find { it.tagName.startsWith("v$versionPrefix") }
+                  ?: error("Could not find release starting with $versionPrefix")
+      
+              val archName = when (arch) {
+                  Arch.X64 -> "amd64"
+                  Arch.ARM64 -> "arm64"
+                  else -> error("Unsupported architecture: $arch")
+              }
+              val expectedName = when (os) {
+                  OS.Linux -> "bazelisk-linux-$archName"
+                  OS.Mac -> "bazelisk-darwin-$archName"
+                  OS.Windows -> "bazelisk-windows-$archName.exe"
+              }
+      
+              val asset = release.assets.find { it.name == expectedName }
+                  ?: error("Could not find asset matching $expectedName. Available: ${release.assets.joinToString { it.name }}")
+      
+              return BazeliskVersionDownloadInfo(
+                  release.tagName,
+                  expectedName,
+                  URI.create(asset.browserDownloadUrl).toURL()
+              )
+          }
+      
+          private suspend fun downloadJson(url: String): String = withContext(Dispatchers.IO) {
+              println("Fetching bazelisk releases from $url")
+              val connection = URL(url).openConnection() as HttpURLConnection
+              connection.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+          }
+      
+          private fun parseJson(json: String): List<BazeliskRelease> {
+              val mapper = ObjectMapper()
+                  .registerModule(KotlinModule.Builder().build())
+                  .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+              return mapper.readValue(json)
+          }
+      
+          @JsonIgnoreProperties(ignoreUnknown = true)
+          private data class BazeliskRelease(
+              @param:JsonProperty("tag_name")
+              val tagName: String,
+              val assets: List<BazeliskAsset>
+          )
+      
+          @JsonIgnoreProperties(ignoreUnknown = true)
+          private data class BazeliskAsset(
+              val name: String,
+              @param:JsonProperty("browser_download_url")
+              val browserDownloadUrl: String
+          )
+      }
+      
+      data class BazeliskVersionDownloadInfo(
+          val version: String,
+          val filename: String,
+          val downloadUrl: URL
+      )
+      
+      private fun URL.downloadTo(destination: Path) {
+          this.openStream().use { input ->
+              destination.outputStream().use { output ->
+                  input.copyTo(output)
+              }
+          }
+      }
+      
+      private fun move(from: Path, to: Path) {
+          try {
+              Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+          } catch (_: AtomicMoveNotSupportedException) {
+              Files.move(from, to, StandardCopyOption.REPLACE_EXISTING)
+          }
+      }
+      
+      enum class OS(val value: String) {
+          Windows("win"),
+          Linux("linux"),
+          Mac("darwin");
+      
+          override fun toString() = value
+      
+          companion object {
+              fun detect(): OS = when {
+                  SystemUtils.IS_OS_WINDOWS -> Windows
+                  SystemUtils.IS_OS_LINUX -> Linux
+                  SystemUtils.IS_OS_MAC -> Mac
+                  else -> throw IllegalArgumentException("Unsupported OS")
+              }
+          }
+      }
+      
+      enum class Arch(val value: String) {
+          X86("x86"),
+          X64("x64"),
+          ARM64("arm64");
+      
+          override fun toString() = value
+      
+          companion object {
+              fun detect(): Arch = when (val arch = SystemUtils.OS_ARCH.lowercase()) {
+                  "x86" -> X86
+                  "amd64", "x86_64" -> if (SystemUtils.IS_OS_MAC && isProcTranslated()) ARM64 else X64
+                  "aarch64", "arm64" -> ARM64
+                  else -> throw IllegalArgumentException("Unsupported architecture: $arch")
+              }
+      
+              private fun isProcTranslated() = runCatching {
+                  Runtime.getRuntime().exec(arrayOf("sysctl", "-n", "sysctl.proc_translated"))
+                      .inputStream.bufferedReader().use { it.readLine() == "1" }
+              }.getOrDefault(false)
+          }
+      }
+      
+      fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")
+      fun input(name: String) = System.getenv("input_$name") ?: ""
+      
+      fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
+          fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+              println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+      
+          fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+          fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+      
+          writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
+          writeDebug(it.stackTraceToString())
+          kotlin.system.exitProcess(1)
+      }
+      
+      private fun updateEnvPath(binPath: Path) {
+          val newPath = binPath.absolutePathString() + FileSystems.getDefault().separator + System.getenv("PATH")
+          val message = asString(
+              BUILD_SET_PARAMETER,
+              mapOf(
+                  "name" to "env.PATH",
+                  "value" to newPath,
+              )
+          )
+          println(message)
+      }
+      
+      internal suspend fun <T> retry(body: suspend () -> T) = Retry().retry(body)
+      
+      private class Retry {
+          private companion object {
+              val BACKOFF_LIMIT_MS = TimeUnit.MINUTES.toMillis(1)
+              val INITIAL_DELAY_MS = TimeUnit.SECONDS.toMillis(10)
+              const val MAX_ATTEMPTS = 3
+              const val BACKOFF_FACTOR = 2
+              const val BACKOFF_JITTER = 0.1
+          }
+      
+          private val random by lazy(::Random)
+      
+          @OptIn(ExperimentalContracts::class)
+          suspend fun <T> retry(body: suspend () -> T): T {
+              contract {
+                  callsInPlace(body, InvocationKind.AT_LEAST_ONCE)
+              }
+      
+              var effectiveDelay = INITIAL_DELAY_MS
+              for (i in 1..MAX_ATTEMPTS) try {
+                  return body()
+              } catch (e: Throwable) {
+                  if (e is CancellationException) {
+                      throw e
+                  }
+                  if (i == MAX_ATTEMPTS) {
+                      throw RuntimeException("Failed all $MAX_ATTEMPTS attempts, see nested exception for details", e)
+                  }
+                  if (i > 1) {
+                      effectiveDelay = backOff(effectiveDelay, e)
+                  }
+                  println("Retry $i of $MAX_ATTEMPTS failed with '${e.message ?: e::class.java}'. Retrying in ${effectiveDelay}ms")
+                  if (effectiveDelay > 0) {
+                      delay(effectiveDelay)
+                  }
+              }
+              error("Should not be reached")
+          }
+      
+          private fun backOff(previousDelay: Long, cause: Throwable): Long {
+              val nextDelay = min(previousDelay * BACKOFF_FACTOR, BACKOFF_LIMIT_MS) +
+                      (random.nextGaussian() * previousDelay * BACKOFF_JITTER).toLong()
+              if (nextDelay > BACKOFF_LIMIT_MS) {
+                  throw Exception("Back off limit ${BACKOFF_LIMIT_MS}ms exceeded, see nested exception for details", cause)
+              }
+              return nextDelay
+          }
+      }
