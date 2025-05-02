@@ -1,0 +1,47 @@
+name: jetbrains/dagger
+version: 1.0.0
+description: |
+  Installs the Dagger CLI and then optionally runs a Dagger command.
+  The installed CLI can be accessed via the "dagger" command in the subsequent build steps.
+inputs:
+  - env.input_version:
+      type: text
+      required: true
+      label: Dagger version
+      description: |
+        The version of the Dagger CLI to install, e.g. 0.18.2.
+  - env.input_command:
+      type: text
+      required: false
+      label: Dagger command
+      description: |
+        The optional Dagger CLI command to execute, e.g. "dagger call build".
+  - env.input_workdir:
+      type: text
+      required: false
+      label: Working directory
+      description: |
+        The optional path in which to execute the Dagger command. Can be relative to the agent working directory.
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        Directory where the Dagger CLI should be installed.
+      default: "%teamcity.agent.tools.dir%"
+  - env.input_stop_engine:
+      type: boolean
+      required: false
+      label: Stop engine
+      description: |
+        A flag that specifies whether the Dagger engine should be stopped at the end of the build step.
+      default: true
+  - env.input_cloud_token:
+      type: password
+      required: false
+      label: Cloud token
+      description: |
+        The optional Dagger Cloud authentication token.
+steps:
+  - name: Dagger
+    kotlin-script: !include src.main.kts

@@ -11,6 +11,7 @@ project {
 
     buildType(AddToPath)
     buildType(CreateFileAndPublish)
+    buildType(Dagger)
     buildType(DownloadFileAndPublish)
     buildType(ImportJUnitReport)
     buildType(InstallAwsCLI)

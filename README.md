@@ -26,6 +26,9 @@ Recipe example based on article content from [JetBrains Blog](https://blog.jetbr
 Creates a text file with the specified content at the given path.
 The directory is created automatically if it does not exist.
 
+### [dagger](src/dagger/README.md) (Kotlin Script)
+Installs the Dagger CLI and then optionally runs a Dagger command.
+
 ### [download-file](src/download-file/README.md) (Kotlin Script)
 Downloads a file from the specified URL to the given directory.
 Supports bearer authentication, as well as custom headers.
@@ -88,3 +91,14 @@ without creating a corresponding directory in S3.
 To build recipes run:
 ```bash
 ./gradlew recipes
+```
+
+Running this command produces the finalized recipe files in `.teamcity/pluginData/_Self/metaRunners`.
+
+The resulting `.yml` files can be used for:
+1. Publishing to [JetBrains Marketplace](https://plugins.jetbrains.com/teamcity_recipe).
+2. Local testing by uploading the files as private (local) recipes in TeamCity.
+
+To run tests Docker is required. The command:
+```bash
+./gradlew clean test

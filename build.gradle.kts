@@ -11,6 +11,7 @@ recipes {
     add("src/aws/upload-to-s3")
     add("src/build-godot-game")
     add("src/create-file")
+    add("src/dagger")
     add("src/download-file")
     add("src/import-xml-report")
     add("src/pin-build")
