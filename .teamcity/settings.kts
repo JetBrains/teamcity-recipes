@@ -25,5 +25,4 @@ project {
     buildType(TagBuild)
     buildType(TagCurrentBuild)
     buildType(UntagCurrentBuild)
-    buildType(UploadToS3AndDownloadFromS3)
 }

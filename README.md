@@ -33,10 +33,6 @@ Installs the Dagger CLI and then optionally runs a Dagger command.
 Downloads a file from the specified URL to the given directory.
 Supports bearer authentication, as well as custom headers.
 
-### [download-from-s3](src/aws/download-from-s3/README.md) (Kotlin Script)
-Retrieves an object from AWS S3 and saves it to a specified local destination.
-Allows you to download both individual files and AWS S3 folders.
-
 ### [install-aws-cli](src/aws/install-aws-cli/README.md) (Kotlin Script)
 Installs the AWS Command Line Interface (CLI) on the agent, allowing subsequent build steps to call the “aws” command.
 
@@ -81,11 +77,6 @@ If you need to tag specific builds by their IDs, use the 'tag-build' recipe inst
 Tags a specific TeamCity build. Locates the build to tag by the given build ID.
 To tag the current build instead, use the 'tag-current-build' recipe.
 This recipe utilizes TeamCity REST API and requires Token-Based Authentication credentials.
-
-### [upload-to-s3](src/aws/upload-to-s3/README.md) (Kotlin Script)
-Uploads a local file or directory to the AWS S3 bucket.
-If a directory is selected, the recipe will upload its contents directly to the target path
-without creating a corresponding directory in S3.
 
 ## Dev quickstart
 To build recipes run:
