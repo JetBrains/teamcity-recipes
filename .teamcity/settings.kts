@@ -10,6 +10,7 @@ project {
     buildType(RecipesTests)
 
     buildType(AddToPath)
+    buildType(AwsCliDocker)
     buildType(CreateFileAndPublish)
     buildType(Dagger)
     buildType(DownloadFileAndPublish)

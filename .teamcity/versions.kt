@@ -1,5 +1,6 @@
 object Recipes {
     const val AddToPath = "jetbrains/add-to-path@1.0.0"
+    const val AwsCliDocker = "jetbrains/aws-cli-docker@1.0.0"
     const val CreateFile = "jetbrains/create-file@1.0.0"
     const val Dagger = "jetbrains/dagger@1.0.0"
     const val DownloadFile = "jetbrains/download-file@1.0.0"

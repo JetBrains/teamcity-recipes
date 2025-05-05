@@ -6,6 +6,7 @@ recipes {
     setOutputPath(".teamcity/pluginData/_Self/metaRunners/")
 
     add("src/add-to-path")
+    add("src/aws/aws-cli-docker")
     add("src/aws/install-aws-cli")
     add("src/build-godot-game")
     add("src/create-file")

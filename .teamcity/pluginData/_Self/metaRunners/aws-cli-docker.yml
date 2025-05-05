@@ -1,0 +1,52 @@
+name: jetbrains/aws-cli-docker
+version: 1.0.0
+description: |
+  Runs AWS CLI command from Docker container.
+container:
+  image: public.ecr.aws/aws-cli/aws-cli
+  platform: linux
+inputs:
+  - env.input_command:
+      type: text
+      required: true
+      label: Command
+      description: The AWS CLI command to run, e.g. "aws s3 cp build.zip s3://bucket".
+  - env.input_aws_access_key_id:
+      type: password
+      required: false
+      label: Access key ID
+      description: |
+        The optional AWS account access key ID.
+  - env.input_aws_secret_access_key:
+      type: password
+      required: false
+      label: Secret access key
+      description: |
+        The optional AWS account secret access key.
+  - env.input_aws_region:
+      type: text
+      required: false
+      label: AWS region
+      description: |
+        The optional AWS region.
+steps:
+  - name: Run command
+    script: |-
+      #!/usr/bin/env bash
+      set -euo pipefail
+      
+      command="$input_command"
+      
+      # Configure AWS credentials if provided
+      if [[ -n "$input_aws_access_key_id" ]]; then
+        aws configure set aws_access_key_id "$input_aws_access_key_id"
+      fi
+      if [[ -n "$input_aws_secret_access_key" ]]; then
+        aws configure set aws_secret_access_key "$input_aws_secret_access_key"
+      fi
+      if [[ -n "$input_aws_region" ]]; then
+        aws configure set region "$input_aws_region"
+      fi
+      
+      # Execute the AWS CLI command
+      eval "$command"

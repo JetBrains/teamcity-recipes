@@ -19,6 +19,9 @@ Recipes are custom build steps, and as such, are added to build configurations i
 ### [add-to-path](src/add-to-path/README.md) (Service message)
 Temporarily prepends a specified directory to the PATH environment variable during the build process, ensuring its executables take precedence.
 
+### [aws-cli-docker](src/aws/aws-cli-docker/README.md) (Bash script with custom Docker image)
+Runs AWS CLI command from Docker container.
+
 ### [build-godot-game](src/build-godot-game/README.md) (Bash script with custom Docker image)
 Recipe example based on article content from [JetBrains Blog](https://blog.jetbrains.com/teamcity/2024/10/automating-godot-game-builds-with-teamcity/).
 
