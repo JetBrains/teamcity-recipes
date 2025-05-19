@@ -216,7 +216,7 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
 }
 
 private fun updateEnvPath(binPath: Path) {
-    val newPath = binPath.absolutePathString() + FileSystems.getDefault().separator + System.getenv("PATH")
+    val newPath = binPath.absolutePathString() + java.io.File.pathSeparator + System.getenv("PATH")
     val message = asString(
         BUILD_SET_PARAMETER,
         mapOf(
