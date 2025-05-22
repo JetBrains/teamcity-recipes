@@ -56,7 +56,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
     val tempFile = installDirectory.resolve("${executableName}.tmp")
 
     if (installPath.exists()) {
-        println("Bazelisk ${bazeliskVersion.version} is already installed to $installDirectory")
+        println("Bazelisk ${bazeliskVersion.version} is already installed to '$installDirectory'")
         updateEnvPath(installDirectory)
         return
     }
@@ -88,12 +88,12 @@ object BazeliskVersionManager {
         val releases = parseJson(json)
 
         val release = releases.find { it.tagName.startsWith("v$versionPrefix") }
-            ?: error("Could not find release starting with $versionPrefix")
+            ?: error("Could not find release starting with '$versionPrefix'")
 
         val archName = when (arch) {
             Arch.X64 -> "amd64"
             Arch.ARM64 -> "arm64"
-            else -> error("Unsupported architecture: $arch")
+            else -> error("Unsupported architecture: '$arch'")
         }
         val expectedName = when (os) {
             OS.Linux -> "bazelisk-linux-$archName"
@@ -102,7 +102,7 @@ object BazeliskVersionManager {
         }
 
         val asset = release.assets.find { it.name == expectedName }
-            ?: error("Could not find asset matching $expectedName. Available: ${release.assets.joinToString { it.name }}")
+            ?: error("Could not find asset matching '$expectedName'. Available: '${release.assets.joinToString { it.name }}'")
 
         return BazeliskVersionDownloadInfo(
             release.tagName,
@@ -173,7 +173,7 @@ enum class OS(val value: String) {
             SystemUtils.IS_OS_WINDOWS -> Windows
             SystemUtils.IS_OS_LINUX -> Linux
             SystemUtils.IS_OS_MAC -> Mac
-            else -> throw IllegalArgumentException("Unsupported OS")
+            else -> error("Unsupported OS")
         }
     }
 }
@@ -190,7 +190,7 @@ enum class Arch(val value: String) {
             "x86" -> X86
             "amd64", "x86_64" -> if (SystemUtils.IS_OS_MAC && isProcTranslated()) ARM64 else X64
             "aarch64", "arm64" -> ARM64
-            else -> throw IllegalArgumentException("Unsupported architecture: $arch")
+            else -> error("Unsupported architecture: '$arch'")
         }
 
         private fun isProcTranslated() = runCatching {
@@ -210,7 +210,8 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
     fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
     fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
 
-    writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
+    val errorMessage = it.message ?: it.javaClass.name
+    writeError("$errorMessage (Switch to 'Verbose' log level to see stacktrace)")
     writeDebug(it.stackTraceToString())
     kotlin.system.exitProcess(1)
 }
@@ -254,12 +255,12 @@ private class Retry {
                 throw e
             }
             if (i == MAX_ATTEMPTS) {
-                throw RuntimeException("Failed all $MAX_ATTEMPTS attempts, see nested exception for details", e)
+                error("Failed all $MAX_ATTEMPTS attempts: '${e.toString()}'")
             }
             if (i > 1) {
                 effectiveDelay = backOff(effectiveDelay, e)
             }
-            println("Retry $i of $MAX_ATTEMPTS failed with '${e.message ?: e::class.java}'. Retrying in ${effectiveDelay}ms")
+            println("Retry $i of $MAX_ATTEMPTS failed with '${e.toString()}'. Retrying in ${effectiveDelay}ms")
             if (effectiveDelay > 0) {
                 delay(effectiveDelay)
             }
@@ -271,7 +272,7 @@ private class Retry {
         val nextDelay = min(previousDelay * BACKOFF_FACTOR, BACKOFF_LIMIT_MS) +
                 (random.nextGaussian() * previousDelay * BACKOFF_JITTER).toLong()
         if (nextDelay > BACKOFF_LIMIT_MS) {
-            throw Exception("Back off limit ${BACKOFF_LIMIT_MS}ms exceeded, see nested exception for details", cause)
+            error("Back off limit ${BACKOFF_LIMIT_MS}ms exceeded: ${cause.toString()}")
         }
         return nextDelay
     }
