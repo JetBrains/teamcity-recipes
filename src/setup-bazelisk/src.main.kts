@@ -86,7 +86,7 @@ object BazeliskVersionManager {
         val releases = parseJson(json)
 
         val release = releases.find { it.tagName.startsWith("v$versionPrefix") }
-            ?: error("Could not find a release starting with '$versionPrefix'. Available versions: " +
+            ?: error("Could not find the '$versionPrefix' release. Available: " +
                     releases.joinToString { it.tagName.trimStart('v') })
 
         val archName = when (arch) {
@@ -111,11 +111,11 @@ object BazeliskVersionManager {
     }
 
     private suspend fun downloadJson(url: String): String = withContext(Dispatchers.IO) {
-        println("Fetching bazelisk releases from $url")
+        println("Fetching Bazelisk releases from $url")
         try {
             URL(url).openConnection().inputStream.bufferedReader().use { it.readText() }
         } catch (e: Exception) {
-            throw RuntimeException("Failed to fetch bazelisk releases from $url", e)
+            throw RuntimeException("Failed to fetch Bazelisk releases from $url", e)
         }
     }
 
@@ -156,7 +156,7 @@ private fun URL.downloadTo(destination: Path) {
         }
     }
     catch (e: Exception) {
-        throw RuntimeException("Failed to download bazelisk from $this to $destination", e)
+        throw RuntimeException("Failed to download Bazelisk from $this to $destination", e)
     }
 }
 
