@@ -227,7 +227,7 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
 }
 
 private fun setOutputPath(binPath: Path) {
-    val env = "env.OUTPUT_BAZELISK_PATH"
+    val env = "env.output_bazelisk_path"
     val value = binPath.absolutePathString()
     val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
     println(message)

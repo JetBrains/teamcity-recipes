@@ -169,7 +169,7 @@ fun downloadAsTempFile(
 }
 
 fun setOutputPath(path: String) {
-    val env = "env.OUTPUT_DAGGER_PATH"
+    val env = "env.output_dagger_path"
     val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to path))
     println(message)
 }

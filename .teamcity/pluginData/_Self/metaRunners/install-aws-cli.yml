@@ -2,7 +2,7 @@ name: jetbrains/install-aws-cli
 version: 2.0.0
 description: |
   Installs the AWS Command Line Interface (CLI) on the agent.
-  The path to the installed CLI is available via the 'OUTPUT_AWS_CLI_PATH' environment variable.
+  The path to the installed CLI is available via the 'output_aws_cli_path' environment variable.
 inputs:
   - env.input_aws_cli_version:
       type: text
@@ -349,7 +349,7 @@ steps:
       }
       
       fun setEnvPath(value: String) {
-          val env = "env.OUTPUT_AWS_CLI_PATH"
+          val env = "env.output_aws_cli_path"
           val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
           println(message)
       }

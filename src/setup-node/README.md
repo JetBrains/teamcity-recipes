@@ -1,7 +1,7 @@
 # jetbrains/setup-node
 
 Installs Node.js on the agent.
-The path to the installed node is available via the 'OUTPUT_NODE_PATH' environment variable.
+The path to the installed node is available via the 'output_node_path' environment variable.
 
 ## Inputs
 

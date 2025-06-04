@@ -323,7 +323,7 @@ fun downloadFile(url: String, dir: File): File {
 }
 
 fun setEnvPath(value: String) {
-    val env = "env.OUTPUT_AWS_CLI_PATH"
+    val env = "env.output_aws_cli_path"
     val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
     println(message)
 }
