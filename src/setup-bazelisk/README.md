@@ -1,6 +1,7 @@
 # jetbrains/setup-bazelisk
 
-Downloads and installs bazelisk on the agent from [bazelisk github releases](https://api.github.com/repos/bazelbuild/bazelisk/releases), allowing subsequent build steps to call the “bazel” command.
+Downloads and installs bazelisk on the agent from [bazelisk github releases](https://api.github.com/repos/bazelbuild/bazelisk/releases).
+The path to the installed bazelisk is available via the 'OUTPUT_BAZELISK_PATH' environment variable.
 
 ## Inputs
 
