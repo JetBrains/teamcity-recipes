@@ -111,7 +111,7 @@ class LinuxInstaller : AwsCliInstaller {
         cleanUpAndLogSuccess(temp, version)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath("""${binDir(version)}:${System.getenv("PATH")}""")
+    override fun updateEnvPath(version: String) = setEnvPath(binDir(version))
 
     private fun unpackZip(zipFile: File, outputDir: String) {
         File(outputDir).apply { if (!exists()) mkdirs() }
@@ -193,7 +193,7 @@ class MacInstaller : AwsCliInstaller {
     }
 
     override fun updateEnvPath(version: String) =
-        setEnvPath("""${getInstallDir(version)}/aws-cli:${System.getenv("PATH")}""")
+        setEnvPath("""${getInstallDir(version)}/aws-cli""")
 
     private fun installRosettaIfNeeded(installDir: String) {
         if (System.getProperty("os.arch").lowercase() != "aarch64") {
@@ -288,7 +288,7 @@ class WindowsInstaller : AwsCliInstaller {
         FileUtils.delete(logFile)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath("""${getInstallDir(version)};${System.getenv("PATH")}""")
+    override fun updateEnvPath(version: String) = setEnvPath(getInstallDir(version))
 }
 
 fun fetchAwsCliVersions(): List<String> {
@@ -323,13 +323,8 @@ fun downloadFile(url: String, dir: File): File {
 }
 
 fun setEnvPath(value: String) {
-    val message = asString(
-        BUILD_SET_PARAMETER,
-        mapOf(
-            "name" to "env.PATH",
-            "value" to value
-        )
-    )
+    val env = "env.OUTPUT_AWS_CLI_PATH"
+    val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
     println(message)
 }
 
