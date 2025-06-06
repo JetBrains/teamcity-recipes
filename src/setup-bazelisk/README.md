@@ -1,7 +1,7 @@
 # jetbrains/setup-bazelisk
 
 Downloads and installs bazelisk on the agent from [bazelisk github releases](https://api.github.com/repos/bazelbuild/bazelisk/releases).
-The path to the installed binary is exposed as the `output_bazelisk_path` environment variable for downstream steps.
+The path to the installed binary is exposed as the `bazelisk_path` environment variable for downstream steps.
 
 ## Inputs
 

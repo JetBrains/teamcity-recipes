@@ -1,7 +1,7 @@
 # jetbrains/dagger
 
 Installs the Dagger CLI and then optionally runs a Dagger command.
-The path to the installed binary is exposed as the `output_dagger_path` environment variable for downstream steps.
+The path to the installed binary is exposed as the `dagger_path` environment variable for downstream steps.
 
 ## Inputs
 

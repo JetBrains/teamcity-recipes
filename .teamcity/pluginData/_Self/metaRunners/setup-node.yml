@@ -2,7 +2,7 @@ name: jetbrains/setup-node
 version: 2.0.0
 description: |
   Installs Node.js on the agent.
-  The path to the installed binary is exposed as the 'output_node_path' environment variable for downstream steps.
+  The path to the installed binary is exposed as the 'node_path' environment variable for downstream steps.
 inputs:
   - env.input_version:
       type: text
@@ -114,7 +114,7 @@ steps:
           }
       
           private fun updateEnvPath(executablePath: File) {
-              val env = "env.output_node_path"
+              val env = "env.node_path"
               val value = executablePath.absolutePath
               val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
               println(message)

@@ -89,7 +89,7 @@ object Recipe {
     }
 
     private fun updateEnvPath(executablePath: File) {
-        val env = "env.output_node_path"
+        val env = "env.node_path"
         val value = executablePath.absolutePath
         val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
         println(message)

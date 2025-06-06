@@ -24,7 +24,7 @@ object SetupBazelisk : BuildType({
         }
         script {
             id = "simpleRunner"
-            scriptContent = "\$output_bazelisk_path --version"
+            scriptContent = "\$bazelisk_path --version"
         }
         // install again to check it won't install again
         step {
@@ -35,7 +35,7 @@ object SetupBazelisk : BuildType({
         }
         script {
             id = "simpleRunner2"
-            scriptContent = "\$output_bazelisk_path --version"
+            scriptContent = "\$bazelisk_path --version"
         }
     }
 
