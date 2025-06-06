@@ -111,7 +111,7 @@ class LinuxInstaller : AwsCliInstaller {
         cleanUpAndLogSuccess(temp, version)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath(binDir(version))
+    override fun updateEnvPath(version: String) = setEnvPath("${binDir(version)}/aws")
 
     private fun unpackZip(zipFile: File, outputDir: String) {
         File(outputDir).apply { if (!exists()) mkdirs() }
@@ -193,7 +193,7 @@ class MacInstaller : AwsCliInstaller {
     }
 
     override fun updateEnvPath(version: String) =
-        setEnvPath("""${getInstallDir(version)}/aws-cli""")
+        setEnvPath("""${getInstallDir(version)}/aws-cli/aws""")
 
     private fun installRosettaIfNeeded(installDir: String) {
         if (System.getProperty("os.arch").lowercase() != "aarch64") {
@@ -268,7 +268,11 @@ class WindowsInstaller : AwsCliInstaller {
         }
         updateEnvPath(version)
         cleanUpAndLogSuccess(temp, version)
-        File(logFile).let { if (it.exists()) { FileUtils.delete(it) } }
+        File(logFile).let {
+            if (it.exists()) {
+                FileUtils.delete(it)
+            }
+        }
     }
 
     private fun moveMsiExecLogsToBuildLog(logFilePath: String) = runCatching {
@@ -288,7 +292,7 @@ class WindowsInstaller : AwsCliInstaller {
         FileUtils.delete(logFile)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath(getInstallDir(version))
+    override fun updateEnvPath(version: String) = setEnvPath("""${getInstallDir(version)}\aws""")
 }
 
 fun fetchAwsCliVersions(): List<String> {

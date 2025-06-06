@@ -54,7 +54,7 @@ runCatchingWithLogging {
         dagger.isRegularFile() -> println("Dagger ${Inputs.version} is already installed at $dagger")
         else -> installDagger()
     }
-    setOutputPath(Inputs.installationPath.absolutePathString())
+    setOutputPath(daggerExecutablePath().absolutePathString())
     val exitCode = if (Inputs.command.isNotBlank()) runDaggerCommand() else 0
     if (Inputs.stopEngine) {
         tryStopDaggerEngine()

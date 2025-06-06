@@ -58,7 +58,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
 
     if (installPath.exists()) {
         println("Bazelisk ${bazeliskVersion.version} is already installed to '$installDirectory'")
-        setOutputPath(installDirectory)
+        setOutputPath(installPath)
         return
     }
 
@@ -78,7 +78,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
         tempFile.deleteIfExists()
     }
 
-    setOutputPath(installDirectory)
+    setOutputPath(installPath)
 }
 
 object BazeliskVersionManager {
@@ -226,9 +226,9 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
     kotlin.system.exitProcess(1)
 }
 
-private fun setOutputPath(binPath: Path) {
+private fun setOutputPath(executablePath: Path) {
     val env = "env.output_bazelisk_path"
-    val value = binPath.absolutePathString()
+    val value = executablePath.absolutePathString()
     val message = asString(BUILD_SET_PARAMETER, mapOf("name" to env, "value" to value))
     println(message)
 }

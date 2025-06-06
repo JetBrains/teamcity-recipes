@@ -24,7 +24,7 @@ object SetupNode : BuildType({
         }
         script {
             id = "simpleRunner"
-            scriptContent = "node --version"
+            scriptContent = """%output_node_path% --version"""
         }
         // install again to check it won't install again
         step {
@@ -35,7 +35,7 @@ object SetupNode : BuildType({
         }
         script {
             id = "simpleRunner2"
-            scriptContent = "node --version"
+            scriptContent = """%output_node_path% --version"""
         }
     }
 
