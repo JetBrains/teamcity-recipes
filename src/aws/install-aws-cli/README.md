@@ -1,7 +1,7 @@
 # jetbrains/install-aws-cli
 
 Installs the AWS Command Line Interface (CLI) on the agent.
-The path to the installed CLI is available via the 'output_aws_cli_path' environment variable.
+The path to the installed binary is exposed as the `output_aws_cli_path` environment variable for downstream steps.
 
 ## Inputs
 
