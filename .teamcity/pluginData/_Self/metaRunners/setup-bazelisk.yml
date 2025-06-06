@@ -2,7 +2,7 @@ name: jetbrains/setup-bazelisk
 version: 1.0.0
 description: |
   Installs Bazelisk on the agent.
-  The path to the installed binary is exposed as the `output_bazelisk_path` environment variable for downstream steps.
+  The path to the installed binary is exposed as the 'output_bazelisk_path' environment variable for downstream steps.
 inputs:
   - env.input_version:
       type: text

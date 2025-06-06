@@ -2,7 +2,7 @@ name: jetbrains/setup-node
 version: 2.0.0
 description: |
   Installs Node.js on the agent.
-  The path to the installed binary is exposed as the `output_node_path` environment variable for downstream steps.
+  The path to the installed binary is exposed as the 'output_node_path' environment variable for downstream steps.
 inputs:
   - env.input_version:
       type: text
