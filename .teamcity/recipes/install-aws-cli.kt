@@ -23,7 +23,7 @@ object InstallAwsCLI : BuildType({
         }
         script {
             id = "simpleRunner"
-            scriptContent = """%output_aws_cli_path% help"""
+            scriptContent = "\$output_aws_cli_path help"
         }
     }
 
