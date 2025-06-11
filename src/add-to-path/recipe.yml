@@ -1,5 +1,5 @@
 name: jetbrains/add-to-path
-title: Prepend to env PATH
+title: Prepend to PATH env variable
 version: 1.0.1
 description: |
   Temporarily prepends a specified directory to the PATH environment variable during the build process, ensuring its executables take precedence.

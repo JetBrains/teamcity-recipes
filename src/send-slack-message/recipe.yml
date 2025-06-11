@@ -1,5 +1,5 @@
 name: jetbrains/send-slack-message
-title: Send slack message
+title: Send Slack message
 version: 1.0.1
 description: |
   Sends a Slack notification. 
