@@ -1,5 +1,6 @@
 name: jetbrains/tag-build
-version: 1.0.0
+title: Tag build
+version: 1.0.1
 description: |
   Tags a specific TeamCity build. Locates the build to tag by the given build ID. 
   To tag the current build instead, use the 'tag-current-build' recipe.

@@ -1,4 +1,5 @@
 name: jetbrains/aws-cli-docker
+title: Run AWS CLI command
 version: 1.0.0
 description: |
   Runs AWS CLI command from Docker container.

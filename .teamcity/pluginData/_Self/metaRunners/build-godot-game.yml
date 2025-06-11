@@ -1,4 +1,5 @@
 name: jetbrains/build-godot-game
+title: Build Godot game using .NET
 version: 1.0.0
 description: A pipeline for building and testing a Godot game using .NET
 container: barichello/godot-ci:mono-4.2.1

@@ -1,4 +1,5 @@
 name: jetbrains/setup-node
+title: Setup Node.js
 version: 2.0.0
 description: |
   Installs Node.js on the agent.

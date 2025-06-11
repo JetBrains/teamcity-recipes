@@ -1,5 +1,6 @@
 name: jetbrains/untag-current-build
-version: 1.0.0
+title: Untag current build
+version: 1.0.1
 description: |
   Removes the specific tag from the current build.
 inputs:

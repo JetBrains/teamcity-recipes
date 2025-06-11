@@ -1,5 +1,6 @@
 name: jetbrains/set-build-status
-version: 1.0.0
+title: Set build status
+version: 1.0.1
 description: |
   Sets the build status to successful or failed. The status persists after the build completes.
 inputs:
