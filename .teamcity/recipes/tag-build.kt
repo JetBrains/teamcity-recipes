@@ -25,7 +25,7 @@ object TagBuild : BuildType({
             input("tags", tags)
             input("build_id", "%teamcity.build.id%")
             input("server_url", "%teamcity.serverUrl%")
-            input("access_token", "credentialsJSON:1707ebb7-f822-401e-bc54-337c32c3f029")
+            input("access_token", "credentialsJSON:19937da4-cff7-4261-952b-b25d9f8c5974")
         }
     }
 
