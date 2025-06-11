@@ -21,6 +21,8 @@ import java.io.File
 import java.io.InputStream
 import java.net.URL
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
 import kotlin.system.exitProcess
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -111,7 +113,7 @@ class LinuxInstaller : AwsCliInstaller {
         cleanUpAndLogSuccess(temp, version)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath("""${binDir(version)}:${System.getenv("PATH")}""")
+    override fun updateEnvPath(version: String) = setOutputPath(binDir(version))
 
     private fun unpackZip(zipFile: File, outputDir: String) {
         File(outputDir).apply { if (!exists()) mkdirs() }
@@ -193,7 +195,7 @@ class MacInstaller : AwsCliInstaller {
     }
 
     override fun updateEnvPath(version: String) =
-        setEnvPath("""${getInstallDir(version)}/aws-cli:${System.getenv("PATH")}""")
+        setOutputPath("""${getInstallDir(version)}/aws-cli""")
 
     private fun installRosettaIfNeeded(installDir: String) {
         if (System.getProperty("os.arch").lowercase() != "aarch64") {
@@ -268,7 +270,11 @@ class WindowsInstaller : AwsCliInstaller {
         }
         updateEnvPath(version)
         cleanUpAndLogSuccess(temp, version)
-        File(logFile).let { if (it.exists()) { FileUtils.delete(it) } }
+        File(logFile).let {
+            if (it.exists()) {
+                FileUtils.delete(it)
+            }
+        }
     }
 
     private fun moveMsiExecLogsToBuildLog(logFilePath: String) = runCatching {
@@ -288,7 +294,7 @@ class WindowsInstaller : AwsCliInstaller {
         FileUtils.delete(logFile)
     }
 
-    override fun updateEnvPath(version: String) = setEnvPath("""${getInstallDir(version)};${System.getenv("PATH")}""")
+    override fun updateEnvPath(version: String) = setOutputPath(getInstallDir(version))
 }
 
 fun fetchAwsCliVersions(): List<String> {
@@ -322,15 +328,16 @@ fun downloadFile(url: String, dir: File): File {
     return zip
 }
 
-fun setEnvPath(value: String) {
-    val message = asString(
-        BUILD_SET_PARAMETER,
-        mapOf(
-            "name" to "env.PATH",
-            "value" to value
-        )
-    )
-    println(message)
+fun setOutputPath(bin: String) {
+    fun setEnvVar(name: String, value: String) {
+        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
+        println(message)
+    }
+
+    val binPath = Path(bin)
+    val executablePath = if (SystemUtils.IS_OS_WINDOWS) "aws.exe" else "aws"
+    setEnvVar("env.AWS_CLI_EXEC", binPath.resolve(executablePath).absolutePathString())
+    setEnvVar("env.AWS_CLI_PATH", binPath.absolutePathString())
 }
 
 object ProcessUtils {
@@ -395,7 +402,8 @@ object ProcessUtils {
 
 val toolsDir: String
     get() = requiredInput("installation_path")
-        .ifBlank { File(".").absolutePath }
+        .ifBlank { "." }
+        .let { File(it).normalize().absolutePath }
 
 val versionRegex: Regex
     get() = Regex("^(\\d+\\.\\d+\\.\\d+)$")

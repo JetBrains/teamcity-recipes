@@ -1,7 +1,7 @@
 # jetbrains/dagger
 
 Installs the Dagger CLI and then optionally runs a Dagger command.
-The installed CLI can be accessed via the "dagger" command in the subsequent build steps.
+The paths to the installed binary and its directory are exposed as the `DAGGER_EXEC`and `DAGGER_PATH` environment variables for use in downstream steps.
 
 ## Inputs
 

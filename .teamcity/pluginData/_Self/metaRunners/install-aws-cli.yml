@@ -1,7 +1,8 @@
 name: jetbrains/install-aws-cli
-version: 1.0.0
+version: 2.0.0
 description: |
-  Installs the AWS Command Line Interface (CLI) on the agent, allowing subsequent build steps to call the “aws” command.
+  Installs the AWS Command Line Interface (CLI) on the agent.
+  The paths to the installed binary and its directory are exposed as the 'AWS_CLI_EXEC' and 'AWS_CLI_PATH' environment variables for use in downstream steps.
 inputs:
   - env.input_aws_cli_version:
       type: text
@@ -46,6 +47,8 @@ steps:
       import java.io.InputStream
       import java.net.URL
       import java.util.concurrent.TimeUnit
+      import kotlin.io.path.Path
+      import kotlin.io.path.absolutePathString
       import kotlin.system.exitProcess
       import kotlin.time.Duration
       import kotlin.time.Duration.Companion.hours
@@ -136,7 +139,7 @@ steps:
               cleanUpAndLogSuccess(temp, version)
           }
       
-          override fun updateEnvPath(version: String) = setEnvPath("""${binDir(version)}:${System.getenv("PATH")}""")
+          override fun updateEnvPath(version: String) = setOutputPath(binDir(version))
       
           private fun unpackZip(zipFile: File, outputDir: String) {
               File(outputDir).apply { if (!exists()) mkdirs() }
@@ -218,7 +221,7 @@ steps:
           }
       
           override fun updateEnvPath(version: String) =
-              setEnvPath("""${getInstallDir(version)}/aws-cli:${System.getenv("PATH")}""")
+              setOutputPath("""${getInstallDir(version)}/aws-cli""")
       
           private fun installRosettaIfNeeded(installDir: String) {
               if (System.getProperty("os.arch").lowercase() != "aarch64") {
@@ -293,7 +296,11 @@ steps:
               }
               updateEnvPath(version)
               cleanUpAndLogSuccess(temp, version)
-              File(logFile).let { if (it.exists()) { FileUtils.delete(it) } }
+              File(logFile).let {
+                  if (it.exists()) {
+                      FileUtils.delete(it)
+                  }
+              }
           }
       
           private fun moveMsiExecLogsToBuildLog(logFilePath: String) = runCatching {
@@ -313,7 +320,7 @@ steps:
               FileUtils.delete(logFile)
           }
       
-          override fun updateEnvPath(version: String) = setEnvPath("""${getInstallDir(version)};${System.getenv("PATH")}""")
+          override fun updateEnvPath(version: String) = setOutputPath(getInstallDir(version))
       }
       
       fun fetchAwsCliVersions(): List<String> {
@@ -347,15 +354,16 @@ steps:
           return zip
       }
       
-      fun setEnvPath(value: String) {
-          val message = asString(
-              BUILD_SET_PARAMETER,
-              mapOf(
-                  "name" to "env.PATH",
-                  "value" to value
-              )
-          )
-          println(message)
+      fun setOutputPath(bin: String) {
+          fun setEnvVar(name: String, value: String) {
+              val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
+              println(message)
+          }
+      
+          val binPath = Path(bin)
+          val executablePath = if (SystemUtils.IS_OS_WINDOWS) "aws.exe" else "aws"
+          setEnvVar("env.AWS_CLI_EXEC", binPath.resolve(executablePath).absolutePathString())
+          setEnvVar("env.AWS_CLI_PATH", binPath.absolutePathString())
       }
       
       object ProcessUtils {
@@ -420,7 +428,8 @@ steps:
       
       val toolsDir: String
           get() = requiredInput("installation_path")
-              .ifBlank { File(".").absolutePath }
+              .ifBlank { "." }
+              .let { File(it).normalize().absolutePath }
       
       val versionRegex: Regex
           get() = Regex("^(\\d+\\.\\d+\\.\\d+)$")

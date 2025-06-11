@@ -37,7 +37,7 @@ Downloads a file from the specified URL to the given directory.
 Supports bearer authentication, as well as custom headers.
 
 ### [install-aws-cli](src/aws/install-aws-cli/README.md) (Kotlin Script)
-Installs the AWS Command Line Interface (CLI) on the agent, allowing subsequent build steps to call the “aws” command.
+Installs the AWS Command Line Interface (CLI) on the agent.
 
 ### [import-xml-report](src/import-xml-report/README.md) (Service Message)
 Imports an XML test report.
@@ -67,10 +67,10 @@ Sets an **environment variable**.
 If the variable does not exist in the environment, it will be **created**.
 
 ### [setup-bazelisk](src/setup-bazelisk/README.md)
-Installs bazelisk on the agent, allowing subsequent build steps to call the “bazel” command.
+Installs bazelisk on the agent.
 
 ### [setup-node](src/setup-node/README.md)
-Installs Node.js on the agent, allowing subsequent build steps to call the “node” command.
+Installs Node.js on the agent.
 
 ### [tag-current-build](src/tag-current-build/README.md) / [untag-current-build](src/untag-current-build/README.md) (Service message)
 Tags the current build.

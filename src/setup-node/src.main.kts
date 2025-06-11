@@ -28,7 +28,6 @@ import org.apache.commons.io.FileUtils.getTempDirectory
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang3.SystemUtils
 import java.io.File
-import java.io.File.pathSeparator
 import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -75,7 +74,7 @@ object Recipe {
             println("Unpacked to ${unpackPath.absolutePath}")
         }
 
-        updateEnvPath(binPath)
+        setOutputPath(binPath)
     }
 
     private fun downloadToTemp(info: NodeJsDownloadInfo): File =
@@ -89,15 +88,18 @@ object Recipe {
         return binPath
     }
 
-    private fun updateEnvPath(binPath: File) {
-        val message = asString(
-            BUILD_SET_PARAMETER,
-            mapOf(
-                "name" to "env.PATH",
-                "value" to binPath.absolutePath + pathSeparator + System.getenv("PATH"),
-            )
-        )
-        println(message)
+    private fun setOutputPath(binPath: File) {
+        fun setEnvVariable(name: String, path: File) {
+            val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to path.absolutePath))
+            println(message)
+        }
+
+        val executableName = when {
+            SystemUtils.IS_OS_WINDOWS -> "node.exe"
+            else -> "node"
+        }
+        setEnvVariable("env.NODE_EXEC", binPath.resolve(executableName))
+        setEnvVariable("env.NODE_PATH", binPath)
     }
 }
 

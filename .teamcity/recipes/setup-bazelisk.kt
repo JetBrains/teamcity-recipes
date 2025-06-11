@@ -23,8 +23,16 @@ object SetupBazelisk : BuildType({
             input("installation_path", ".")
         }
         script {
-            id = "simpleRunner"
-            scriptContent = "bazel --version"
+            id = "simpleRunnerShell"
+            name = "Check Bazelisk installation on Linux/Mac"
+            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "\$BAZELISK_EXEC --version"
+        }
+        script {
+            id = "simpleRunnerWindows"
+            name = "Check Bazelisk installation on Windows"
+            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "%%BAZELISK_EXEC%% --version"
         }
         // install again to check it won't install again
         step {
@@ -34,8 +42,16 @@ object SetupBazelisk : BuildType({
             input("installation_path", ".")
         }
         script {
-            id = "simpleRunner2"
-            scriptContent = "bazel --version"
+            id = "simpleRunnerShell2"
+            name = "Check Bazelisk installation on Linux/Mac"
+            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "\$BAZELISK_EXEC --version"
+        }
+        script {
+            id = "simpleRunnerWindows2"
+            name = "Check Bazelisk installation on Windows"
+            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "%%BAZELISK_EXEC%% --version"
         }
     }
 

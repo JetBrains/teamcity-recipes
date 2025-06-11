@@ -22,8 +22,16 @@ object InstallAwsCLI : BuildType({
             input("aws_cli_version", "latest")
         }
         script {
-            id = "simpleRunner"
-            scriptContent = "aws help"
+            id = "simpleRunnerShell"
+            name = "Check AWS CLI installation on Linux/Mac"
+            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "\$AWS_CLI_EXEC --version"
+        }
+        script {
+            id = "simpleRunnerWindows"
+            name = "Check AWS CLI installation on Windows"
+            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
+            scriptContent = "%%AWS_CLI_EXEC%% --version"
         }
     }
 

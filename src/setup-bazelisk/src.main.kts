@@ -18,14 +18,17 @@ import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.BUILD_SET_PARAMETER
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 import org.apache.commons.lang3.SystemUtils
 import java.net.URI
 import java.net.URL
-import java.nio.file.*
-import java.util.Random
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
@@ -55,7 +58,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
 
     if (installPath.exists()) {
         println("Bazelisk ${bazeliskVersion.version} is already installed to '$installDirectory'")
-        updateEnvPath(installDirectory)
+        setOutputPath(installDirectory, installPath)
         return
     }
 
@@ -75,7 +78,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
         tempFile.deleteIfExists()
     }
 
-    updateEnvPath(installDirectory)
+    setOutputPath(installDirectory, installPath)
 }
 
 object BazeliskVersionManager {
@@ -86,8 +89,9 @@ object BazeliskVersionManager {
         val releases = parseJson(json)
 
         val release = releases.find { it.tagName.startsWith("v$versionPrefix") }
-            ?: error("Could not find the '$versionPrefix' release. Available: " +
-                    releases.joinToString { it.tagName.trimStart('v') })
+            ?: error(
+                "Could not find the '$versionPrefix' release. Available: " +
+                        releases.joinToString { it.tagName.trimStart('v') })
 
         val archName = when (arch) {
             Arch.X64 -> "amd64"
@@ -154,8 +158,7 @@ private fun URL.downloadTo(destination: Path) {
                 input.copyTo(output)
             }
         }
-    }
-    catch (e: Exception) {
+    } catch (e: Exception) {
         throw RuntimeException("Failed to download Bazelisk from $this to $destination", e)
     }
 }
@@ -223,16 +226,14 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
     kotlin.system.exitProcess(1)
 }
 
-private fun updateEnvPath(binPath: Path) {
-    val newPath = binPath.absolutePathString() + java.io.File.pathSeparator + System.getenv("PATH")
-    val message = asString(
-        BUILD_SET_PARAMETER,
-        mapOf(
-            "name" to "env.PATH",
-            "value" to newPath,
-        )
-    )
-    println(message)
+private fun setOutputPath(installDirectoryPath: Path, executablePath: Path) {
+    fun setEnvVariable(name: String, path: Path) {
+        val value = path.absolutePathString()
+        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
+        println(message)
+    }
+    setEnvVariable("env.BAZELISK_EXEC", executablePath)
+    setEnvVariable("env.BAZELISK_PATH", installDirectoryPath)
 }
 
 internal suspend fun <T> retry(body: suspend () -> T) = Retry().retry(body)

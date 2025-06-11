@@ -5,8 +5,8 @@
 @file:DependsOn("org.jetbrains.teamcity:serviceMessages:2025.03")
 @file:DependsOn("org.jetbrains.teamcity:common-api:2025.03")
 
-import jetbrains.buildServer.messages.serviceMessages.ServiceMessage
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
+import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.*
 import jetbrains.buildServer.util.StringUtil
 import kotlinx.coroutines.CoroutineScope
@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.SystemUtils
-import java.io.File.pathSeparator
 import java.io.InputStream
 import java.net.URI
 import java.nio.file.Files
@@ -55,7 +54,7 @@ runCatchingWithLogging {
         dagger.isRegularFile() -> println("Dagger ${Inputs.version} is already installed at $dagger")
         else -> installDagger()
     }
-    prependEnvPathWith(Inputs.installationPath.absolutePathString())
+    setOutputPath()
     val exitCode = if (Inputs.command.isNotBlank()) runDaggerCommand() else 0
     if (Inputs.stopEngine) {
         tryStopDaggerEngine()
@@ -169,10 +168,14 @@ fun downloadAsTempFile(
     return tempFile
 }
 
-fun prependEnvPathWith(path: String) {
-    println("Adding $path to env.PATH")
-    val updated = path + pathSeparator + System.getenv("PATH")
-    println(ServiceMessage.asString(BUILD_SET_PARAMETER, mapOf("name" to "env.PATH", "value" to updated)))
+fun setOutputPath() {
+    fun setEnvVariable(name: String, value: String) {
+        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
+        println(message)
+    }
+
+    setEnvVariable("env.DAGGER_EXEC", daggerExecutablePath().absolutePathString())
+    setEnvVariable("env.DAGGER_PATH", Inputs.installationPath.absolutePathString())
 }
 
 object Process {
@@ -244,17 +247,17 @@ object Process {
 }
 
 fun <T> runWithin(logBlock: String, block: () -> T): T {
-    println(ServiceMessage.asString(BLOCK_OPENED, mapOf("name" to logBlock)))
+    println(asString(BLOCK_OPENED, mapOf("name" to logBlock)))
     try {
         return block()
     } finally {
-        println(ServiceMessage.asString(BLOCK_CLOSED, mapOf("name" to logBlock)))
+        println(asString(BLOCK_CLOSED, mapOf("name" to logBlock)))
     }
 }
 
 fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
     fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
-        println(ServiceMessage.asString(MESSAGE, mapOf("text" to text, *attributes)))
+        println(asString(MESSAGE, mapOf("text" to text, *attributes)))
 
     fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
     fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
