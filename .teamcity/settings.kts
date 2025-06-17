@@ -2,7 +2,7 @@ import jetbrains.buildServer.configs.kotlin.project
 import jetbrains.buildServer.configs.kotlin.version
 import recipes.*
 
-version = "2024.12"
+version = "2025.03"
 
 project {
     vcsRoot(RecipesVscRoot)

@@ -1,5 +1,6 @@
 name: jetbrains/download-file
-version: 1.0.0
+title: Download file
+version: 1.0.1
 description: |
   Downloads a file from the specified URL to the given directory. 
   Supports bearer authentication, as well as custom headers.

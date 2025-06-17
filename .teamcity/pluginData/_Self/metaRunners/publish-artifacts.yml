@@ -1,5 +1,6 @@
 name: jetbrains/publish-artifacts
-version: 1.0.0
+title: Publish artifacts
+version: 1.0.1
 description: |
   Publishes build artifacts immediately after they are built, while the build is still running.
 inputs:

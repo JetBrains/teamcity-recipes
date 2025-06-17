@@ -1,5 +1,6 @@
 name: jetbrains/send-slack-message
-version: 1.0.0
+title: Send Slack message
+version: 1.0.1
 description: |
   Sends a Slack notification. 
   Requires a project that has a configured Slack connection with Notifications limit greater than 0.

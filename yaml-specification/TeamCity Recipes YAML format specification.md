@@ -5,6 +5,7 @@
 Example:
 ```yaml
 name: jetbrains/example-recipe
+title: The title of example recipe
 version: 1.2.3
 description: This is an example recipe
 container: <container properties>
@@ -17,6 +18,7 @@ Field description:
 * **name**: a string value specifying the recipe's name. Mandatory. Must be in the ```<namespace>/<name-in-namespace>``` format. Besides the namespace-name delimiter, it should contain only letters, digits, underscores, and dashes. Each part cannot start or end with a dash or underscore, and cannot contain several consecutive dashes and underscores.
     * The namespace part designates a namespace on the Marketplace that is unique and belongs to the recipe's vendor. The minimum namespace length is 5 characters, the maximum length is 30 characters.
     * The name-in-namespace part designates the unique name in the namespace. The maximum name-in-namespace length is 30 characters.
+* **title**: a string value specifying the recipe's title visible in the build step selection UI. Mandatory for recipes uploaded to the Marketplace.
 * **version**: a string value specifying the recipe's version in the ```major.minor.patch``` format. The 'minor' and 'patch' parts are optional. Mandatory.
 * **description**: a string value specifying the description of the recipe. The maximum length is 250 characters. Mandatory.
 * **container**: properties that specify whether the recipe will be executed in a container and the details of the execution. Non-mandatory.

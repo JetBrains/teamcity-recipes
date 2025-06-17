@@ -1,4 +1,5 @@
 name: jetbrains/build-godot-game
+title: Build Godot game using .NET
 version: 1.0.0
 description: A pipeline for building and testing a Godot game using .NET
 container: barichello/godot-ci:mono-4.2.1
@@ -19,7 +20,7 @@ inputs:
       description: The name of the exported game file
       default: Export.zip
 steps:
-  - name: Setup .NET
+  - name: Set up .NET
     script: |
       wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
       dpkg -i packages-microsoft-prod.deb

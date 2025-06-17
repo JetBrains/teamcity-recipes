@@ -1,5 +1,6 @@
 name: jetbrains/import-xml-report
-version: 1.0.0
+title: Import XML report
+version: 1.0.1
 description: |
   Imports an XML test report. 
   Supports JUnit, Surefire, NUnit, and VSTest formats.

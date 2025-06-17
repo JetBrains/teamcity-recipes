@@ -1,5 +1,6 @@
 name: jetbrains/tag-current-build
-version: 1.0.0
+title: Tag current build
+version: 1.0.1
 description: |
   Tags the current build. 
   If you need to tag specific builds by their IDs, use the 'tag-build' recipe instead.

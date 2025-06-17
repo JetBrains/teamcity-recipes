@@ -1,4 +1,5 @@
 name: jetbrains/dagger
+title: Dagger
 version: 1.0.0
 description: |
   Installs the Dagger CLI and then optionally runs a Dagger command.

@@ -1,5 +1,6 @@
 name: jetbrains/set-environment-variable
-version: 1.0.0
+title: Set environment variable
+version: 1.0.1
 description: |
   Sets the environment variable to the required value, creating it if absent.
 inputs:

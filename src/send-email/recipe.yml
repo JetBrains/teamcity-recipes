@@ -1,5 +1,6 @@
 name: jetbrains/send-email
-version: 1.0.0
+title: Send email
+version: 1.0.1
 description: |
   Sends a custom email from a build step. 
   Requires a configured SMTP server (Admin | Email Notifier in TeamCity UI) with the “Notifications limit” property greater than 0.

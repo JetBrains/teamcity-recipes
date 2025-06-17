@@ -1,4 +1,5 @@
 name: jetbrains/setup-bazelisk
+title: Set up Bazelisk
 version: 1.0.0
 description: |
   Installs Bazelisk on the agent.
@@ -21,7 +22,7 @@ inputs:
       default: "%teamcity.agent.tools.dir%"
 
 steps:
-  - name: Setup Bazelisk
+  - name: Set up Bazelisk
     kotlin-script: |-
       @file:Repository("https://repo.maven.apache.org/maven2/")
       @file:DependsOn("org.apache.commons:commons-lang3:3.17.0")

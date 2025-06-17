@@ -1,5 +1,6 @@
 name: jetbrains/create-file
-version: 1.0.0
+title: Create text file
+version: 1.0.1
 description: |
   Creates a text file with the specified content at the given path. 
   The directory is created automatically if it does not exist.

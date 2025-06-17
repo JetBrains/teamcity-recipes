@@ -1,5 +1,6 @@
 name: jetbrains/pin-build
-version: 1.0.0
+title: Pin build
+version: 1.0.1
 description: |
   Pins the specific build to prevent it from being removed during a scheduled clean-up. 
   Can only pin a finished build.

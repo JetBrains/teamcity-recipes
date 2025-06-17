@@ -14,6 +14,10 @@ object TagBuild : BuildType({
 
     enableMatrixBuild()
 
+    params {
+        password("access_token", "credentialsJSON:75547608-9b76-4bdb-a21e-d2ad8919cd22")
+    }
+
     steps {
         step {
             id = "TagBuild"
@@ -25,7 +29,7 @@ object TagBuild : BuildType({
             input("tags", tags)
             input("build_id", "%teamcity.build.id%")
             input("server_url", "%teamcity.serverUrl%")
-            input("access_token", "credentialsJSON:1707ebb7-f822-401e-bc54-337c32c3f029")
+            input("access_token", "%access_token%")
         }
     }
 
