@@ -24,10 +24,7 @@ import kotlinx.coroutines.withContext
 import org.apache.commons.lang3.SystemUtils
 import java.net.URI
 import java.net.URL
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
+import java.nio.file.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
@@ -42,6 +39,7 @@ runCatchingWithLogging {
     val installationPath = input("installation_path")
         .ifBlank { "." }
         .let { Path(it).toAbsolutePath().normalize() }
+        .getOrTemp()
 
     runBlocking {
         installBazelisk(version, installationPath, OS.detect(), Arch.detect())
@@ -214,12 +212,6 @@ fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '
 fun input(name: String) = System.getenv("input_$name") ?: ""
 
 fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
-    fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
-        println(asString(MESSAGE, mapOf("text" to text, *attributes)))
-
-    fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
-    fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
-
     val errorMessage = it.message ?: it.javaClass.name
     writeError("$errorMessage (Switch to 'Verbose' log level to see stacktrace)")
     writeDebug(it.stackTraceToString())
@@ -283,5 +275,36 @@ private class Retry {
             error("Back off limit ${BACKOFF_LIMIT_MS}ms exceeded: ${cause.toString()}")
         }
         return nextDelay
+    }
+}
+
+fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+fun writeWarning(text: String) = writeMessage(text, "status" to "WARNING")
+fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+
+fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+    println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+
+fun Path.getOrTemp(): Path {
+    return when {
+        !Files.exists(this) -> {
+            try {
+                Files.createDirectories(this)
+                this
+            } catch (e: Exception) {
+                val temp = System.getProperty("java.io.tmpdir")
+                writeWarning("Could not create directory at '$this', using '$temp' (Switch to 'Verbose' log level to see stacktrace)")
+                writeDebug(e.stackTraceToString())
+                Paths.get(temp)
+            }
+        }
+
+        Files.isWritable(this) -> this
+
+        else -> {
+            val temp = System.getProperty("java.io.tmpdir")
+            writeWarning("Installation path '$this' is not writable, using '$temp'")
+            Paths.get(temp)
+        }
     }
 }

@@ -32,12 +32,16 @@ import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 runCatchingWithLogging {
     val version = requiredInput("version")
     val installationPath = input("installation_path")
         .ifBlank { "." }
         .let { File(it).canonicalFile }
+        .getOrTemp()
     Recipe.installNode(version, installationPath, OS.detect(), Arch.detect())
 }
 
@@ -45,12 +49,6 @@ fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '
 fun input(name: String) = System.getenv("input_$name") ?: ""
 
 fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
-    fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
-        println(asString(MESSAGE, mapOf("text" to text, *attributes)))
-
-    fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
-    fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
-
     writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
     writeDebug(it.stackTraceToString())
     kotlin.system.exitProcess(1)
@@ -271,5 +269,38 @@ object Unpack {
         setReadable((mode and 0b100_000_000) != 0)
         setWritable((mode and 0b010_000_000) != 0)
         setExecutable((mode and 0b001_000_000) != 0)
+    }
+}
+
+fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+fun writeWarning(text: String) = writeMessage(text, "status" to "WARNING")
+fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+
+fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+    println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+
+fun File.getOrTemp(): File = this.toPath().getOrTemp().toFile()
+
+fun Path.getOrTemp(): Path {
+    return when {
+        !Files.exists(this) -> {
+            try {
+                Files.createDirectories(this)
+                this
+            } catch (e: Exception) {
+                val temp = System.getProperty("java.io.tmpdir")
+                writeWarning("Could not create directory at '$this', using '$temp' (Switch to 'Verbose' log level to see stacktrace)")
+                writeDebug(e.stackTraceToString())
+                Paths.get(temp)
+            }
+        }
+
+        Files.isWritable(this) -> this
+
+        else -> {
+            val temp = System.getProperty("java.io.tmpdir")
+            writeWarning("Installation path '$this' is not writable, using '$temp'")
+            Paths.get(temp)
+        }
     }
 }

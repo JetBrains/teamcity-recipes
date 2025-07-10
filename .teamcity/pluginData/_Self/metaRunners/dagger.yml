@@ -69,52 +69,45 @@ steps:
       import java.nio.file.Paths
       import java.util.concurrent.TimeUnit
       import kotlin.io.path.absolutePathString
-      import kotlin.io.path.createDirectories
       import kotlin.io.path.isRegularFile
       import kotlin.system.exitProcess
       import kotlin.time.Duration
       import kotlin.time.Duration.Companion.hours
       
-      object Inputs {
-          val version: String = input("version")
-              .removePrefix("v")
-              .ifBlank { error("Dagger version is not set") }
-          val command: String = input("command")
-          val workdir: Path = input("workdir")
-              .run { toNormalizedPath() }
-          val stopEngine: Boolean = input("stop_engine")
-              .ifBlank { "true" }
-              .toBoolean()
-          val installationPath: Path = input("installation_path")
-              .run { toNormalizedPath() }
-              .run { resolve("dagger-$version") }
-              .also { it.createDirectories() }
-          val cloudToken: String = input("cloud_token")
-      
-          private fun input(name: String) = System.getenv("input_$name") ?: ""
-          private fun String.toNormalizedPath(): Path =
-              ifBlank { "." }.let { Paths.get(it).toAbsolutePath().normalize() }
-      }
+      val version: String = input("version")
+          .removePrefix("v")
+          .ifBlank { error("Dagger version is not set") }
+      val command: String = input("command")
+      val workdir: Path = input("workdir")
+          .run { toNormalizedPath() }
+      val stopEngine: Boolean = input("stop_engine")
+          .ifBlank { "true" }
+          .toBoolean()
+      val installationPath: Path = input("installation_path")
+          .run { toNormalizedPath() }
+          .getOrTemp()
+          .run { resolve("dagger-$version") }
+      val cloudToken: String = input("cloud_token")
       
       runCatchingWithLogging {
           val dagger = daggerExecutablePath()
           when {
-              dagger.isRegularFile() -> println("Dagger ${Inputs.version} is already installed at $dagger")
+              dagger.isRegularFile() -> println("Dagger $version is already installed at $dagger")
               else -> installDagger()
           }
           setOutputPath()
-          val exitCode = if (Inputs.command.isNotBlank()) runDaggerCommand() else 0
-          if (Inputs.stopEngine) {
+          val exitCode = if (command.isNotBlank()) runDaggerCommand() else 0
+          if (stopEngine) {
               tryStopDaggerEngine()
           }
           exitProcess(exitCode)
       }
       
       fun daggerExecutablePath(): Path =
-          Inputs.installationPath.resolve(if (SystemUtils.IS_OS_WINDOWS) "dagger.exe" else "dagger")
+          installationPath.resolve(if (SystemUtils.IS_OS_WINDOWS) "dagger.exe" else "dagger")
       
       fun installDagger(): Unit = runWithin(logBlock = "Installing Dagger") {
-          val path = Inputs.installationPath.absolutePathString()
+          val path = installationPath.absolutePathString()
           println("Installing Dagger to $path")
           val installer = downloadAsTempFile("https://dl.dagger.io/dagger/install.sh")
               .also { it.toFile().setExecutable(true) }
@@ -126,7 +119,7 @@ steps:
               val result = Process.run(
                   command = command,
                   workingDir = installer.parent,
-                  environment = mapOf("BIN_DIR" to path, "DAGGER_VERSION" to Inputs.version),
+                  environment = mapOf("BIN_DIR" to path, "DAGGER_VERSION" to version),
                   listener = object : Process.Listener {
                       override fun onStdout(line: String) = println(line)
                       override fun onStderr(line: String) = println(line)
@@ -143,16 +136,16 @@ steps:
       
       fun runDaggerCommand(): Int = runWithin(logBlock = "Running Dagger command") {
           val environment = buildMap {
-              if (Inputs.cloudToken.isNotBlank()) {
-                  put("DAGGER_CLOUD_TOKEN", Inputs.cloudToken)
+              if (cloudToken.isNotBlank()) {
+                  put("DAGGER_CLOUD_TOKEN", cloudToken)
               }
           }
-          val cleaned = Inputs.command.removePrefix("dagger").trimStart()
+          val cleaned = command.removePrefix("dagger").trimStart()
           val command = "${daggerExecutablePath().absolutePathString()} $cleaned"
-          println("Running $command in directory: ${Inputs.workdir}")
+          println("Running $command in directory: $workdir")
           val result = Process.run(
               command = StringUtil.splitCommandArgumentsAndUnquote(command),
-              workingDir = Inputs.workdir,
+              workingDir = workdir,
               environment = environment,
           )
           return@runWithin when (result) {
@@ -166,7 +159,7 @@ steps:
       fun tryStopDaggerEngine(): Unit = runWithin(logBlock = "Stopping Dagger engine") {
           val ps = listOf("docker", "ps", "--filter", "name=dagger-engine-*", "-q")
           println("Running: ${ps.joinToString(separator = " ")}")
-          val psResult = Process.run(command = ps, workingDir = Inputs.workdir)
+          val psResult = Process.run(command = ps, workingDir = workdir)
           if (psResult !is Process.Result.Success) {
               System.err.println("Failed to list Dagger engine containers")
               return@runWithin
@@ -180,7 +173,7 @@ steps:
           containerIds.forEach { id ->
               val stop = listOf("docker", "stop", "-t", "300", id)
               println("Running: ${stop.joinToString(separator = " ")}")
-              val stopResult = Process.run(command = stop, workingDir = Inputs.workdir)
+              val stopResult = Process.run(command = stop, workingDir = workdir)
               if (stopResult !is Process.Result.Success) {
                   System.err.println("Failed to stop container $id")
               } else println("Stopped $id")
@@ -223,7 +216,7 @@ steps:
           }
       
           setEnvVariable("env.DAGGER_EXEC", daggerExecutablePath().absolutePathString())
-          setEnvVariable("env.DAGGER_PATH", Inputs.installationPath.absolutePathString())
+          setEnvVariable("env.DAGGER_PATH", installationPath.absolutePathString())
       }
       
       object Process {
@@ -304,13 +297,42 @@ steps:
       }
       
       fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
-          fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
-              println(asString(MESSAGE, mapOf("text" to text, *attributes)))
-      
-          fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
-          fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
-      
           writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
           writeDebug(it.stackTraceToString())
           exitProcess(1)
+      }
+      
+      fun input(name: String) = System.getenv("input_$name") ?: ""
+      fun String.toNormalizedPath(): Path =
+          ifBlank { "." }.let { Paths.get(it).toAbsolutePath().normalize() }
+      
+      fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+      fun writeWarning(text: String) = writeMessage(text, "status" to "WARNING")
+      fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+      
+      fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+          println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+      
+      fun Path.getOrTemp(): Path {
+          return when {
+              !Files.exists(this) -> {
+                  try {
+                      Files.createDirectories(this)
+                      this
+                  } catch (e: Exception) {
+                      val temp = System.getProperty("java.io.tmpdir")
+                      writeWarning("Could not create directory at '$this', using '$temp' (Switch to 'Verbose' log level to see stacktrace)")
+                      writeDebug(e.stackTraceToString())
+                      Paths.get(temp)
+                  }
+              }
+      
+              Files.isWritable(this) -> this
+      
+              else -> {
+                  val temp = System.getProperty("java.io.tmpdir")
+                  writeWarning("Installation path '$this' is not writable, using '$temp'")
+                  Paths.get(temp)
+              }
+          }
       }

@@ -47,12 +47,23 @@ steps:
       import java.io.File
       import java.io.InputStream
       import java.net.URL
+      import java.nio.file.Files
+      import java.nio.file.Path
+      import java.nio.file.Paths
       import java.util.concurrent.TimeUnit
       import kotlin.io.path.Path
       import kotlin.io.path.absolutePathString
       import kotlin.system.exitProcess
       import kotlin.time.Duration
       import kotlin.time.Duration.Companion.hours
+      
+      val installationPath: String = run {
+          requiredInput("installation_path")
+              .ifBlank { "." }
+              .let { File(it).normalize() }
+              .getOrTemp()
+              .absolutePath
+      }
       
       runCatchingWithLogging {
           val installer = when {
@@ -105,7 +116,7 @@ steps:
       }
       
       class LinuxInstaller : AwsCliInstaller {
-          override fun getInstallDir(version: String) = """$toolsDir/aws-cli.$version"""
+          override fun getInstallDir(version: String) = """$installationPath/aws-cli.$version"""
       
           override fun isInstalled(version: String): Boolean {
               val binDir = File(binDir(version))
@@ -168,7 +179,7 @@ steps:
       }
       
       class MacInstaller : AwsCliInstaller {
-          override fun getInstallDir(version: String) = """$toolsDir/aws-cli.$version"""
+          override fun getInstallDir(version: String) = """$installationPath/aws-cli.$version"""
       
           override fun isInstalled(version: String): Boolean {
               val installDir = File(getInstallDir(version), "aws-cli")
@@ -245,7 +256,7 @@ steps:
       }
       
       class WindowsInstaller : AwsCliInstaller {
-          override fun getInstallDir(version: String) = """$toolsDir\aws-cli"""
+          override fun getInstallDir(version: String) = """$installationPath\aws-cli"""
       
           override fun isInstalled(version: String): Boolean {
               val installDir = File(getInstallDir(version))
@@ -427,24 +438,46 @@ steps:
               }
       }
       
-      val toolsDir: String
-          get() = requiredInput("installation_path")
-              .ifBlank { "." }
-              .let { File(it).normalize().absolutePath }
-      
       val versionRegex: Regex
           get() = Regex("^(\\d+\\.\\d+\\.\\d+)$")
       
       fun requiredInput(name: String) = System.getenv("input_$name") ?: error("Input '$name' is not set.")
       
       fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
-          fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
-              println(asString(MESSAGE, mapOf("text" to text, *attributes)))
-      
-          fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
-          fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
-      
           writeError("$it (Switch to 'Verbose' log level to see stacktrace)")
           writeDebug(it.stackTraceToString())
           exitProcess(1)
+      }
+      
+      fun writeDebug(text: String) = writeMessage(text, TAGS_ATRRIBUTE to "tc:internal")
+      fun writeWarning(text: String) = writeMessage(text, "status" to "WARNING")
+      fun writeError(text: String) = writeMessage(text, "status" to "ERROR")
+      
+      fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
+          println(asString(MESSAGE, mapOf("text" to text, *attributes)))
+      
+      fun File.getOrTemp(): File = this.toPath().getOrTemp().toFile()
+      
+      fun Path.getOrTemp(): Path {
+          return when {
+              !Files.exists(this) -> {
+                  try {
+                      Files.createDirectories(this)
+                      this
+                  } catch (e: Exception) {
+                      val temp = System.getProperty("java.io.tmpdir")
+                      writeWarning("Could not create directory at '$this', using '$temp' (Switch to 'Verbose' log level to see stacktrace)")
+                      writeDebug(e.stackTraceToString())
+                      Paths.get(temp)
+                  }
+              }
+      
+              Files.isWritable(this) -> this
+      
+              else -> {
+                  val temp = System.getProperty("java.io.tmpdir")
+                  writeWarning("Installation path '$this' is not writable, using '$temp'")
+                  Paths.get(temp)
+              }
+          }
       }
