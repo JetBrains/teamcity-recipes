@@ -3,7 +3,7 @@ title: Dagger
 version: 1.0.0
 description: |
   Installs the Dagger CLI and then optionally runs a Dagger command.
-  The paths to the installed binary and its directory are exposed as the 'DAGGER_EXEC' and 'DAGGER_PATH' environment variables for use in downstream steps.
+  The installed CLI can be accessed via the "dagger" command in the subsequent build steps.
 inputs:
   - env.input_version:
       type: text
@@ -95,7 +95,7 @@ steps:
               dagger.isRegularFile() -> println("Dagger $version is already installed at $dagger")
               else -> installDagger()
           }
-          setOutputPath()
+          addToPath(installationPath.absolutePathString())
           val exitCode = if (command.isNotBlank()) runDaggerCommand() else 0
           if (stopEngine) {
               tryStopDaggerEngine()
@@ -209,14 +209,19 @@ steps:
           return tempFile
       }
       
-      fun setOutputPath() {
-          fun setEnvVariable(name: String, value: String) {
-              val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
-              println(message)
+      private fun addToPath(newPath: String) {
+          val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+              if (it.isNullOrBlank()) {
+                  newPath
+              } else {
+                  "$newPath\n$it"
+              }
           }
       
-          setEnvVariable("env.DAGGER_EXEC", daggerExecutablePath().absolutePathString())
-          setEnvVariable("env.DAGGER_PATH", installationPath.absolutePathString())
+          val message = asString(
+              BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+          )
+          println(message)
       }
       
       object Process {

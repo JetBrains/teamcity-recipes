@@ -24,8 +24,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.Path
-import kotlin.io.path.absolutePathString
 import kotlin.system.exitProcess
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -124,7 +122,7 @@ class LinuxInstaller : AwsCliInstaller {
         cleanUpAndLogSuccess(temp, version)
     }
 
-    override fun updateEnvPath(version: String) = setOutputPath(binDir(version))
+    override fun updateEnvPath(version: String) = addToPath(binDir(version))
 
     private fun unpackZip(zipFile: File, outputDir: String) {
         File(outputDir).apply { if (!exists()) mkdirs() }
@@ -206,7 +204,7 @@ class MacInstaller : AwsCliInstaller {
     }
 
     override fun updateEnvPath(version: String) =
-        setOutputPath("""${getInstallDir(version)}/aws-cli""")
+        addToPath("""${getInstallDir(version)}/aws-cli""")
 
     private fun installRosettaIfNeeded(installDir: String) {
         if (System.getProperty("os.arch").lowercase() != "aarch64") {
@@ -305,7 +303,7 @@ class WindowsInstaller : AwsCliInstaller {
         FileUtils.delete(logFile)
     }
 
-    override fun updateEnvPath(version: String) = setOutputPath(getInstallDir(version))
+    override fun updateEnvPath(version: String) = addToPath(getInstallDir(version))
 }
 
 fun fetchAwsCliVersions(): List<String> {
@@ -339,16 +337,19 @@ fun downloadFile(url: String, dir: File): File {
     return zip
 }
 
-fun setOutputPath(bin: String) {
-    fun setEnvVar(name: String, value: String) {
-        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
-        println(message)
+private fun addToPath(newPath: String) {
+    val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+        if (it.isNullOrBlank()) {
+            newPath
+        } else {
+            "$newPath\n$it"
+        }
     }
 
-    val binPath = Path(bin)
-    val executablePath = if (SystemUtils.IS_OS_WINDOWS) "aws.exe" else "aws"
-    setEnvVar("env.AWS_CLI_EXEC", binPath.resolve(executablePath).absolutePathString())
-    setEnvVar("env.AWS_CLI_PATH", binPath.absolutePathString())
+    val message = asString(
+        BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+    )
+    println(message)
 }
 
 object ProcessUtils {

@@ -23,16 +23,9 @@ object SetupNode : BuildType({
             input("installation_path", ".")
         }
         script {
-            id = "simpleRunnerShell"
-            name = "Check Node installation on Linux/Mac"
-            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
-            scriptContent = "\$NODE_EXEC --version"
-        }
-        script {
-            id = "simpleRunnerWindows"
-            name = "Check Node installation on Windows"
-            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
-            scriptContent = "%%NODE_EXEC%% --version"
+            id = "simpleRunner"
+            name = "Verify Node installation"
+            scriptContent = "node --version"
         }
         // install again to check it won't install again
         step {
@@ -42,16 +35,9 @@ object SetupNode : BuildType({
             input("installation_path", ".")
         }
         script {
-            id = "simpleRunnerShell2"
-            name = "Check Node installation on Linux/Mac"
-            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
-            scriptContent = "\$NODE_EXEC --version"
-        }
-        script {
-            id = "simpleRunnerWindows2"
-            name = "Check Node installation on Windows"
-            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
-            scriptContent = "%%NODE_EXEC%% --version"
+            id = "simpleRunner2"
+            name = "Verify Node installation"
+            scriptContent = "node --version"
         }
     }
 

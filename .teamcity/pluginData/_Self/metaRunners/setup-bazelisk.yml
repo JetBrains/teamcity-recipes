@@ -2,8 +2,7 @@ name: jetbrains/setup-bazelisk
 title: Set up Bazelisk
 version: 1.0.0
 description: |
-  Installs Bazelisk on the agent.
-  The paths to the installed binary and its directory are exposed as the 'BAZELISK_EXEC' and 'BAZELISK_PATH' environment variables for use in downstream steps.
+  Installs Bazelisk on the agent, allowing subsequent build steps to call the “bazel” command.
 inputs:
   - env.input_version:
       type: text
@@ -82,7 +81,7 @@ steps:
       
           if (installPath.exists()) {
               println("Bazelisk ${bazeliskVersion.version} is already installed to '$installDirectory'")
-              setOutputPath(installDirectory, installPath)
+              addToPath(installDirectory.absolutePathString())
               return
           }
       
@@ -102,7 +101,7 @@ steps:
               tempFile.deleteIfExists()
           }
       
-          setOutputPath(installDirectory, installPath)
+          addToPath(installDirectory.absolutePathString())
       }
       
       object BazeliskVersionManager {
@@ -244,14 +243,19 @@ steps:
           kotlin.system.exitProcess(1)
       }
       
-      private fun setOutputPath(installDirectoryPath: Path, executablePath: Path) {
-          fun setEnvVariable(name: String, path: Path) {
-              val value = path.absolutePathString()
-              val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
-              println(message)
+      private fun addToPath(newPath: String) {
+          val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+              if (it.isNullOrBlank()) {
+                  newPath
+              } else {
+                  "$newPath\n$it"
+              }
           }
-          setEnvVariable("env.BAZELISK_EXEC", executablePath)
-          setEnvVariable("env.BAZELISK_PATH", installDirectoryPath)
+      
+          val message = asString(
+              BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+          )
+          println(message)
       }
       
       internal suspend fun <T> retry(body: suspend () -> T) = Retry().retry(body)

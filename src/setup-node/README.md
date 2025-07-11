@@ -1,7 +1,6 @@
 # jetbrains/setup-node
 
-Installs Node.js on the agent.
-The paths to the installed binary and its directory are exposed as the `NODE_EXEC` and `NODE_PATH` environment variables for use in downstream steps.
+Installs Node.js on the agent, allowing subsequent build steps to call the “node” command.
 
 ## Inputs
 

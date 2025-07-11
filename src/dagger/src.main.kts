@@ -47,7 +47,7 @@ runCatchingWithLogging {
         dagger.isRegularFile() -> println("Dagger $version is already installed at $dagger")
         else -> installDagger()
     }
-    setOutputPath()
+    addToPath(installationPath.absolutePathString())
     val exitCode = if (command.isNotBlank()) runDaggerCommand() else 0
     if (stopEngine) {
         tryStopDaggerEngine()
@@ -161,14 +161,19 @@ fun downloadAsTempFile(
     return tempFile
 }
 
-fun setOutputPath() {
-    fun setEnvVariable(name: String, value: String) {
-        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
-        println(message)
+private fun addToPath(newPath: String) {
+    val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+        if (it.isNullOrBlank()) {
+            newPath
+        } else {
+            "$newPath\n$it"
+        }
     }
 
-    setEnvVariable("env.DAGGER_EXEC", daggerExecutablePath().absolutePathString())
-    setEnvVariable("env.DAGGER_PATH", installationPath.absolutePathString())
+    val message = asString(
+        BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+    )
+    println(message)
 }
 
 object Process {

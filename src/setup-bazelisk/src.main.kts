@@ -56,7 +56,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
 
     if (installPath.exists()) {
         println("Bazelisk ${bazeliskVersion.version} is already installed to '$installDirectory'")
-        setOutputPath(installDirectory, installPath)
+        addToPath(installDirectory.absolutePathString())
         return
     }
 
@@ -76,7 +76,7 @@ suspend fun installBazelisk(version: String, installationPath: Path, os: OS, arc
         tempFile.deleteIfExists()
     }
 
-    setOutputPath(installDirectory, installPath)
+    addToPath(installDirectory.absolutePathString())
 }
 
 object BazeliskVersionManager {
@@ -218,14 +218,19 @@ fun runCatchingWithLogging(block: () -> Unit) = runCatching(block).onFailure {
     kotlin.system.exitProcess(1)
 }
 
-private fun setOutputPath(installDirectoryPath: Path, executablePath: Path) {
-    fun setEnvVariable(name: String, path: Path) {
-        val value = path.absolutePathString()
-        val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to value))
-        println(message)
+private fun addToPath(newPath: String) {
+    val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+        if (it.isNullOrBlank()) {
+            newPath
+        } else {
+            "$newPath\n$it"
+        }
     }
-    setEnvVariable("env.BAZELISK_EXEC", executablePath)
-    setEnvVariable("env.BAZELISK_PATH", installDirectoryPath)
+
+    val message = asString(
+        BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+    )
+    println(message)
 }
 
 internal suspend fun <T> retry(body: suspend () -> T) = Retry().retry(body)

@@ -31,7 +31,7 @@ object Dagger : BuildType({
         script {
             id = "cmd"
             name = "Call dagger from command line step"
-            scriptContent = "\$DAGGER_EXEC version"
+            scriptContent = "dagger version"
         }
         step {
             id = "StopDagger"

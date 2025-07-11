@@ -72,7 +72,7 @@ object Recipe {
             println("Unpacked to ${unpackPath.absolutePath}")
         }
 
-        setOutputPath(binPath)
+        addToPath(binPath.absolutePath)
     }
 
     private fun downloadToTemp(info: NodeJsDownloadInfo): File =
@@ -86,18 +86,19 @@ object Recipe {
         return binPath
     }
 
-    private fun setOutputPath(binPath: File) {
-        fun setEnvVariable(name: String, path: File) {
-            val message = asString(BUILD_SET_PARAMETER, mapOf("name" to name, "value" to path.absolutePath))
-            println(message)
+    private fun addToPath(newPath: String) {
+        val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+            if (it.isNullOrBlank()) {
+                newPath
+            } else {
+                "$newPath\n$it"
+            }
         }
 
-        val executableName = when {
-            SystemUtils.IS_OS_WINDOWS -> "node.exe"
-            else -> "node"
-        }
-        setEnvVariable("env.NODE_EXEC", binPath.resolve(executableName))
-        setEnvVariable("env.NODE_PATH", binPath)
+        val message = asString(
+            BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+        )
+        println(message)
     }
 }
 

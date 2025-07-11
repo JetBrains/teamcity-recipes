@@ -19,7 +19,12 @@ object AddToPath : BuildType({
         step {
             id = "AddToPath"
             type = Recipes.AddToPath
-            input("path", "some-path")
+            input("path", "some-path1")
+        }
+        step {
+            id = "AddToPath2"
+            type = Recipes.AddToPath
+            input("path", "some-path2")
         }
         kotlinScript {
             id = "kotlinScript"
