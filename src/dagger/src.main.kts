@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.SystemUtils
 import java.io.InputStream
 import java.net.URI
+import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -236,7 +237,7 @@ object Process {
     private fun CoroutineScope.readLines(inputStream: InputStream, listener: Listener, isError: Boolean) =
         async(Dispatchers.IO) {
             val lines = mutableListOf<String>()
-            inputStream.bufferedReader().forEachLine { line ->
+            inputStream.bufferedReader(Charset.defaultCharset()).forEachLine { line ->
                 lines.add(line)
                 if (isError) listener.onStderr(line) else listener.onStdout(line)
             }
