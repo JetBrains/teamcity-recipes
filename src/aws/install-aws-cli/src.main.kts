@@ -338,7 +338,7 @@ fun downloadFile(url: String, dir: File): File {
 }
 
 private fun addToPath(newPath: String) {
-    val updated = System.getenv("TEAMCITY_PREPEND_PATH").let {
+    val updated = System.getenv("TEAMCITY_PATH_PREFIX").let {
         if (it.isNullOrBlank()) {
             newPath
         } else {
@@ -347,7 +347,7 @@ private fun addToPath(newPath: String) {
     }
 
     val message = asString(
-        BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PREPEND_PATH", "value" to updated)
+        BUILD_SET_PARAMETER, mapOf<String, String>("name" to "env.TEAMCITY_PATH_PREFIX", "value" to updated)
     )
     println(message)
 }
