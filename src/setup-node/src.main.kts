@@ -29,6 +29,7 @@ import org.apache.commons.io.IOUtils
 import org.apache.commons.lang3.SystemUtils
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.Charset
@@ -283,25 +284,30 @@ fun writeMessage(text: String, vararg attributes: Pair<String, String>) =
 fun File.getOrTemp(): File = this.toPath().getOrTemp().toFile()
 
 fun Path.getOrTemp(): Path {
-    return when {
-        !Files.exists(this) -> {
-            try {
-                Files.createDirectories(this)
-                this
-            } catch (e: Exception) {
-                val temp = System.getProperty("java.io.tmpdir")
-                writeWarning("Could not create directory at '$this', using '$temp' (Switch to 'Verbose' log level to see stacktrace)")
-                writeDebug(e.stackTraceToString())
-                Paths.get(temp)
-            }
-        }
-
-        Files.isWritable(this) -> this
-
-        else -> {
-            val temp = System.getProperty("java.io.tmpdir")
-            writeWarning("Installation path '$this' is not writable, using '$temp'")
-            Paths.get(temp)
+    if (Files.notExists(this)) {
+        try {
+            Files.createDirectories(this)
+        } catch (e: IOException) {
+            return fallbackWithWarning(this, e)
         }
     }
+    if (Files.isDirectory(this)) {
+        try {
+            Files.createTempFile(this, "write-test-", ".tmp").let { testFile ->
+                Files.deleteIfExists(testFile)
+            }
+            return this
+        } catch (e: IOException) {
+            return fallbackWithWarning(this, e)
+        }
+    }
+    return fallbackWithWarning(this, IOException("Not a directory"))
+}
+
+fun fallbackWithWarning(path: Path, cause: Exception): Path {
+    val tmpDir = System.getProperty("java.io.tmpdir")
+        ?: throw IllegalStateException("No 'java.io.tmpdir' defined", cause)
+    writeWarning("Installation path '$path' is not writable, using '$tmpDir' (Switch to 'Verbose' log level to see stacktrace)")
+    writeDebug(cause.stackTraceToString())
+    return Paths.get(tmpDir)
 }
