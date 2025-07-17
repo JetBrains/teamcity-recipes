@@ -119,7 +119,7 @@ Field description:
 * **container**: properties that specify whether the step will be executed in a container and the details of the execution. Non-mandatory.
 * **script**: a string value that specifies a command-line script to be executed. The maximum length for public recipes is 50000 characters.
 * **kotlin-script**: a string value that specifies a Kotlin script to be executed. The maximum length for public recipes is 50000 characters.
-* **uses**: a string value specifying the referenced recipe to be executed. To reference a public recipe, use the format ```<namespace>/<name>@<version>```. Private recipes can reference other private recipes using the format ```private/<recipe-name>```.
+* **uses**: a string value specifying the referenced recipe to be executed. To reference a public recipe, use the format ```<namespace>/<name>@<version>```. Private recipes can reference other private recipes using the format ```private/<recipe-id>```.
 * **inputs**: a list of key-value objects that specify the recipe's inputs. To pass the value of the referencing recipe's input into the referenced recipe's input, the input must be referenced as ```referenced-recipe-input-name: %referencing-recipe-input-name%```.
 
 Exactly one of 'script', 'kotlin-script' and 'uses' must be defined in a recipe step. A step cannot have 'script', 'kotlin-script' and 'uses' fields defined simultaneously. If a step uses the ‘script’ or ‘kotlin-script’ field, it must not define an ‘inputs’ field.”
