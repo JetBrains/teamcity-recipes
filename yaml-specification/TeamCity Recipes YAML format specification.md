@@ -9,10 +9,10 @@
 
 Example:
 ```yaml
-name: jetbrains/example-recipe
-title: The title of example recipe
+name: my-org/recipe-name
+title: The recipe title
 version: 1.2.3
-description: This is an example recipe
+description: The recipe description
 container: <container properties>
 inputs: <input list>
 steps: <step list>
@@ -29,7 +29,7 @@ Field description:
   For private recipes the name can be either in the ```<namespace>/<name-in-namespace>``` format as specified above, or a single name that does not start or end with a dash or underscore, and does not contain several consecutive dashes and underscores. The maximum length of a single name is 100 characters.
 * **title**: a string value specifying the recipe's title visible in the build step selection UI. Mandatory for public recipes. The maximum length for public recipes is 50 characters.
 * **version**: a string value specifying the recipe's version in the ```major.minor.patch``` format. The 'minor' and 'patch' parts are optional. Mandatory for public recipes.
-* **description**: a string value specifying the description of the recipe. The maximum length is 250 characters. Mandatory. The maximum length for public recipes is 1000 characters.
+* **description**: a string value specifying the description of the recipe. Mandatory. The maximum length for public recipes is 1000 characters.
 * **container**: properties that specify whether the recipe will be executed in a container and the details of the execution. Non-mandatory.
 * **inputs**: a list of the recipe's inputs. Non-mandatory.
 * **steps**: a list of the recipe's steps. Mandatory.
@@ -119,7 +119,7 @@ Field description:
 * **container**: properties that specify whether the step will be executed in a container and the details of the execution. Non-mandatory.
 * **script**: a string value that specifies a command-line script to be executed. The maximum length for public recipes is 50000 characters.
 * **kotlin-script**: a string value that specifies a Kotlin script to be executed. The maximum length for public recipes is 50000 characters.
-* **uses**: a string value specifying the referenced recipe that will be executed. The referenced recipe's name must be in the ```<namespace>/<name>@<version>``` format.
+* **uses**: a string value specifying the referenced recipe to be executed. To reference a public recipe, use the format ```<namespace>/<name>@<version>```. Private recipes can reference other private recipes using the format ```private/<recipe-name>```.
 * **inputs**: a list of key-value objects that specify the recipe's inputs. To pass the value of the referencing recipe's input into the referenced recipe's input, the input must be referenced as ```referenced-recipe-input-name: %referencing-recipe-input-name%```.
 
 Exactly one of 'script', 'kotlin-script' and 'uses' must be defined in a recipe step. A step cannot have 'script', 'kotlin-script' and 'uses' fields defined simultaneously. If a step uses the ‘script’ or ‘kotlin-script’ field, it must not define an ‘inputs’ field.”
