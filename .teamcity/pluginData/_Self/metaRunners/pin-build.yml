@@ -1,6 +1,6 @@
 name: jetbrains/pin-build
 title: Pin build
-version: 1.0.1
+version: 1.0.2
 description: |
   Pins the specific build to prevent it from being removed during a scheduled clean-up. 
   Can only pin a finished build.
@@ -18,15 +18,6 @@ inputs:
       label: Comment
       description: |
         The optional pin comment.
-  - env.input_server_url:
-      type: text
-      required: false
-      label: Server URL
-      description: |
-        Used to access TeamCity Rest API. 
-        Default: %teamcity.serverUrl%. 
-        Server URL with protocol, for example: https://teamcity.jetbrains.com
-      default: "%teamcity.serverUrl%"
   - env.input_server_url:
       type: text
       required: false
