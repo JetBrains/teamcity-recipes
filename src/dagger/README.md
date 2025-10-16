@@ -21,10 +21,6 @@ The optional path in which to execute the Dagger command. Can be relative to the
 
 Directory where the Dagger CLI should be installed.
 
-### `input_stop_engine`
-
-A flag that specifies whether the Dagger engine should be stopped at the end of the build step.
-
 ### `input_cloud_token`
 
 The optional Dagger Cloud authentication token.

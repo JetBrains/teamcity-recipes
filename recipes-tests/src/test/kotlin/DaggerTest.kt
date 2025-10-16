@@ -1,8 +1,5 @@
 import io.kotest.assertions.withClue
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.beBlank
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.fail
 import java.net.URI
@@ -17,47 +14,21 @@ class DaggerTest : RecipeTest() {
 
     init {
 
-        "happy path: install dagger, call command, stop engine" {
+        "happy path: install dagger, call command" {
             // arrange
             val dir = tempDir(name = "dagger")
             val daggerModule = "test-module"
             // act
             val result = readScript()
-                .withInput("version", "0.18.2")
+                .withInput("version", "0.19.2")
                 .withInput("installation_path", dir.absolutePathString())
                 .withInput("workdir", dir.absolutePathString())
                 .withInput("command", "dagger init --name $daggerModule")
                 .eval()
             // assert
             result.shouldHaveZeroExitCode()
-            checkDaggerInstalled(dir, version = "0.18.2")
+            checkDaggerInstalled(dir, version = "0.19.2")
             result.stdout shouldContain "Initialized module $daggerModule"
-            withClue("dagger engine should be stopped") {
-                runProcess(listOf("docker", "ps", "--filter", "name=dagger-engine-*", "-q"), dir).let {
-                    it.stdout should beBlank()
-                }
-            }
-        }
-
-        "should not stop engine after running command when explicitly configured" {
-            // arrange
-            val dir = tempDir(name = "dagger")
-            // act
-            readScript()
-                .withInput("stop_engine", "false")
-                .withInput("version", "0.18.2")
-                .withInput("installation_path", dir.absolutePathString())
-                .withInput("workdir", dir.absolutePathString())
-                .withInput("command", "dagger init --name test-module") // command is needed to start engine
-                .eval()
-            // assert
-            withClue("dagger engine should keep running") {
-                runProcess(listOf("docker", "ps", "--filter", "name=dagger-engine-*", "-q"), dir).let {
-                    val stdout = it.stdout.split(System.lineSeparator()).filter { line -> line.isNotBlank() }
-                    stdout shouldHaveSize 1
-                    runProcess(listOf("docker", "stop", "-t", "300", stdout.first()), dir)
-                }
-            }
         }
 
         "should install the latest available dagger version" {
@@ -99,18 +70,18 @@ class DaggerTest : RecipeTest() {
             val dir = tempDir(name = "dagger")
             // act
             val result = readScript()
-                .withInput("version", "v0.18.2")
+                .withInput("version", "v0.19.2")
                 .withInput("installation_path", dir.absolutePathString())
                 .eval()
             // assert
             result.shouldHaveZeroExitCode()
-            checkDaggerInstalled(dir, version = "0.18.2")
+            checkDaggerInstalled(dir, version = "0.19.2")
         }
 
         "should install multiple dagger versions" {
             // arrange
             val dir = tempDir(name = "dagger")
-            val versions = listOf("0.18.2", "0.18.1")
+            val versions = listOf("0.19.2", "0.19.1")
             // act
             versions.forEach { version ->
                 readScript()

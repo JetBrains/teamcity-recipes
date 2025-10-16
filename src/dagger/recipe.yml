@@ -30,13 +30,6 @@ inputs:
       description: |
         Directory where the Dagger CLI should be installed.
       default: "%teamcity.agent.tools.dir%"
-  - env.input_stop_engine:
-      type: boolean
-      required: false
-      label: Stop engine
-      description: |
-        A flag that specifies whether the Dagger engine should be stopped at the end of the build step.
-      default: true
   - env.input_cloud_token:
       type: password
       required: false

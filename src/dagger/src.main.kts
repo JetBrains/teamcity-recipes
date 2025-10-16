@@ -33,9 +33,6 @@ val version: String = input("version")
 val command: String = input("command")
 val workdir: Path = input("workdir")
     .run { toNormalizedPath() }
-val stopEngine: Boolean = input("stop_engine")
-    .ifBlank { "true" }
-    .toBoolean()
 val installationPath: Path = input("installation_path")
     .run { toNormalizedPath() }
     .getOrTemp()
@@ -50,9 +47,6 @@ runCatchingWithLogging {
     }
     addToPath(installationPath.absolutePathString())
     val exitCode = if (command.isNotBlank()) runDaggerCommand() else 0
-    if (stopEngine) {
-        tryStopDaggerEngine()
-    }
     exitProcess(exitCode)
 }
 
@@ -106,30 +100,6 @@ fun runDaggerCommand(): Int = runWithin(logBlock = "Running Dagger command") {
         is Process.Result.Error.NonZeroCode -> result.exitCode
         is Process.Result.Error.Exception -> throw result.reason
         else -> 1
-    }
-}
-
-fun tryStopDaggerEngine(): Unit = runWithin(logBlock = "Stopping Dagger engine") {
-    val ps = listOf("docker", "ps", "--filter", "name=dagger-engine-*", "-q")
-    println("Running: ${ps.joinToString(separator = " ")}")
-    val psResult = Process.run(command = ps, workingDir = workdir)
-    if (psResult !is Process.Result.Success) {
-        System.err.println("Failed to list Dagger engine containers")
-        return@runWithin
-    }
-    val containerIds: List<String> = psResult.stdout
-        .split(System.lineSeparator())
-        .filter { it.isNotBlank() }
-    if (containerIds.isEmpty()) {
-        println("Dagger engine containers not found")
-    }
-    containerIds.forEach { id ->
-        val stop = listOf("docker", "stop", "-t", "300", id)
-        println("Running: ${stop.joinToString(separator = " ")}")
-        val stopResult = Process.run(command = stop, workingDir = workdir)
-        if (stopResult !is Process.Result.Success) {
-            System.err.println("Failed to stop container $id")
-        } else println("Stopped $id")
     }
 }
 

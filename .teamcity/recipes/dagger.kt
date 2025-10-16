@@ -6,7 +6,6 @@ import enableVcsTrigger
 import input
 import jetbrains.buildServer.configs.kotlin.BuildType
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
-import jetbrains.buildServer.configs.kotlin.matrix
 
 object Dagger : BuildType({
     name = "Dagger"
@@ -23,7 +22,7 @@ object Dagger : BuildType({
             id = "DaggerCommand"
             name = "Install Dagger and run a simple command"
             type = Recipes.Dagger
-            input("version", "0.18.2")
+            input("version", "0.19.2")
             input("command", "dagger init --name test-module")
             input("stop_engine", "false")
             input("installation_path", """%teamcity.agent.tools.dir%""")
@@ -37,7 +36,7 @@ object Dagger : BuildType({
             id = "StopDagger"
             name = "Stop Dagger engine"
             type = Recipes.Dagger
-            input("version", "0.18.2")
+            input("version", "0.19.2")
             input("installation_path", """%teamcity.agent.tools.dir%""")
         }
     }
