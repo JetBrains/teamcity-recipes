@@ -241,9 +241,18 @@ object Unpack {
 
         TarArchiveInputStream(GzipCompressorInputStream(FileInputStream(tarGzFile))).use { tar ->
             generateSequence { tar.nextEntry }.forEach { entry ->
-                unpackArchiveEntry(entry, outputDir) { file ->
-                    file.outputStream().use { out -> tar.copyTo(out) }
-                    file.setFilePermissions(entry.mode)
+                val outFile = outputDir.resolveUnpackLocation(entry.name)
+                when {
+                    entry.isDirectory -> outFile.mkdirs()
+                    entry.isSymbolicLink -> {
+                        outFile.parentFile?.mkdirs()
+                        Files.createSymbolicLink(outFile.toPath(), Path.of(entry.linkName))
+                    }
+                    else -> {
+                        outFile.parentFile?.mkdirs()
+                        outFile.outputStream().use { out -> tar.copyTo(out) }
+                        outFile.setFilePermissions(entry.mode)
+                    }
                 }
             }
         }
