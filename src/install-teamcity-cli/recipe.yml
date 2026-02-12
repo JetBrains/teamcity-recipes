@@ -1,0 +1,28 @@
+name: jetbrains/install-teamcity-cli
+title: Install TeamCity CLI
+version: 1.0.0
+description: |
+  Installs the TeamCity CLI (tc) on the agent, allowing subsequent build steps
+  to call the "tc" command.
+inputs:
+  - env.input_version:
+      type: text
+      required: false
+      label: TeamCity CLI version
+      description: |
+        The TeamCity CLI version in "major.minor.patch" format, or "latest"
+        to install the latest version available. Examples: "latest", "0.4.0".
+      default: "latest"
+  - env.input_installation_path:
+      type: text
+      required: false
+      label: Installation path
+      description: |
+        The installation path for the TeamCity CLI on the agent machine.
+        Accepts absolute and relative to the agent checkout directory paths.
+        By default, the agent's tools directory is used.
+      default: "%teamcity.agent.tools.dir%"
+
+steps:
+  - name: Install TeamCity CLI
+    kotlin-script: !include src.main.kts

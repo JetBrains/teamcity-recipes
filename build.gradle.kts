@@ -13,6 +13,7 @@ recipes {
     add("src/dagger")
     add("src/download-file")
     add("src/import-xml-report")
+    add("src/install-teamcity-cli")
     add("src/pin-build")
     add("src/publish-artifacts")
     add("src/send-email")
