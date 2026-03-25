@@ -1,0 +1,50 @@
+name: jetbrains/resharper-inspectcode-global
+title: ReSharper InspectCode (global tool)
+version: 1.0.0
+description: |
+  Installs ReSharper InspectCode as the JetBrains.ReSharper.GlobalTools .NET global tool, runs inspections and imports the generated report into TeamCity.
+inputs:
+  - env.input_solution_path:
+      type: text
+      required: true
+      label: Solution file path
+      description: |
+        The path should be relative to the checkout directory.
+  - env.input_tool_version:
+      type: select
+      required: true
+      label: Tool version
+      options:
+        - <default>
+        - 2026.1.0
+        - 2025.3.4
+        - 2024.3.9
+        - 2023.3.6
+        - 2022.3.3
+        - 2021.3.4
+        - 2020.3.4
+      default: <default>
+      description: |
+        Version to install. <default> resolves to the version pinned in the current recipe script.
+  - env.input_tool_path:
+      type: text
+      required: false
+      label: Tool path
+      description: |
+        Path to install the tool at. When specified, corresponds to the --tool-path option. When omitted, corresponds to the --global option.
+  - env.input_report_path:
+      type: text
+      required: false
+      label: Report path
+      description: |
+        Overrides the path to the generated report. Can be set to reference the report for further processing (e.g. publishing as a build artifact).
+  - env.input_additional_run_args:
+      type: text
+      required: false
+      label: Additional InspectCode args
+      description: |
+        Space-separated option list. Allows configuring the InspectCode tool, e.g. adding project filters: --project=*Billing or disabling the build-before behavior: --no-build.
+        Will be appended to the run command.
+steps:
+  - name: ReSharper InspectCode
+    kotlin-script: !include src.main.kts

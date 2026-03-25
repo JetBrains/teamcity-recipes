@@ -1,0 +1,52 @@
+name: jetbrains/resharper-inspectcode
+title: ReSharper InspectCode
+version: 1.0.0
+description: |
+  Restores or installs ReSharper InspectCode as the JetBrains.ReSharper.GlobalTools .NET tool, runs inspections and imports the generated report into TeamCity.
+inputs:
+  - env.input_solution_path:
+      type: text
+      required: true
+      label: Solution file path
+      description: |
+        The path should be relative to the checkout directory.
+  - env.input_installation_type:
+      type: select
+      required: true
+      label: Tool installation type
+      options:
+        - local
+        - global
+      default: local
+      description: |
+        Defines how the JetBrains.ReSharper.GlobalTools .NET tool is installed and run. The options correspond to the standard ways of installing a .NET tool.
+  - env.input_global_tool_version:
+      type: text
+      required: false
+      label: Tool version (global installation only)
+      description: |
+        Version to install. Ignored for the local installation.
+  - env.input_global_tool_path:
+      type: text
+      required: false
+      label: Tool path (global installation only)
+      description: |
+        Path to install the tool at for the global installation.
+        When specified, corresponds to the --tool-path option. When omitted, corresponds to the --global option.
+        Ignored for the local installation.
+  - env.input_report_path:
+      type: text
+      required: false
+      label: Report path
+      description: |
+        Overrides the path to the generated report. Can be set to reference the report for further processing (e.g. publishing as a build artifact).
+  - env.input_additional_run_args: # needed for plugins, custom settings files, debug output, projects filter
+      type: text
+      required: false
+      label: Additional InspectCode args
+      description: |
+        Space-separated option list. Allows configuring the InspectCode tool, e.g. adding project filters: --project=*Billing or disabling the build-before behavior: --no-build.
+        Will be appended to the run command.
+steps:
+  - name: ReSharper InspectCode
+    kotlin-script: !include src.main.kts
