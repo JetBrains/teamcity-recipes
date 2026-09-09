@@ -29,18 +29,12 @@ inputs:
       description: |
         Additional parameters to write to params.properties, in the
         'param1=value1,param2=value2' format. Each pair is written on its own line.
-  - agent_username:
+  - agent_token:
       type: password
       required: true
-      label: Agent username
+      label: Agent token
       description: |
-        Username of credentials with EDIT permissions to the project.
-  - agent_password:
-      type: password
-      required: true
-      label: Agent password
-      description: |
-        Password of credentials with EDIT permissions to the project.
+        Bearer token with EDIT permissions to the project.
 steps:
   - name: Generate dsl params file
     script: |
@@ -64,7 +58,7 @@ steps:
     script: |
       cd .teamcity/
 
-      curl -sSf -u "%agent_username%:%agent_password%" -o dsl-context.zip "%teamcity.serverUrl%/app/dsl-context?projectExtId=%PROJECT_ID%"
+      curl -sSf --header "Authorization: Bearer %agent_token%" -o dsl-context.zip "%SERVER_URL%/app/dsl-context?projectExtId=%PROJECT_ID%"
 
       mvn -Dteamcity.versionedSettings.exposeInternalParameters=true -Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true -DserverContext=dsl-context.zip teamcity-configs:generate -f pom.xml
 
