@@ -64,8 +64,8 @@ steps:
     script: |
       cd .teamcity/
 
-      curl -sSf -u "%agent_username%:%agent_password%" -o dsl-context.zip "%teamcity.serverUrl%/app/dsl-context?projectExtId=DynamicBuildChains"
+      curl -sSf -u "%agent_username%:%agent_password%" -o dsl-context.zip "%teamcity.serverUrl%/app/dsl-context?projectExtId=%PROJECT_ID%"
 
-      JAVA_HOME=~/.asdf/installs/java/corretto-21.0.11.10.1 mvn -Dteamcity.versionedSettings.exposeInternalParameters=true -Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true -DserverContext=dsl-context.zip teamcity-configs:generate -f pom.xml
+      mvn -Dteamcity.versionedSettings.exposeInternalParameters=true -Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true -DserverContext=dsl-context.zip teamcity-configs:generate -f pom.xml
 
       rm -rf "target/generated-configs/%DSL_RELATIVE_ROOT_ID%"
