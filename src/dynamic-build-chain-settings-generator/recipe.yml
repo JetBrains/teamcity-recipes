@@ -6,7 +6,7 @@ description: |
   This recipe executes the generation step and publishes the settings as an artifact.
   This recipe prepares an environment so that the DSL runs as if it were generating settings
   within the context of your project. To do so, it needs credentials with EDIT permissions to
-  the project. These credentials should be provided as `agent_username` and `agent_password`.
+  the project.
 inputs:
   - SERVER_URL:
       type: text
@@ -27,8 +27,8 @@ inputs:
       required: false
       label: DSL parameters
       description: |
-        Additional parameters to write to params.properties, in the
-        'param1=value1,param2=value2' format. Each pair is written on its own line.
+        A list of newline-delimited 'name=value' parameters to write to 
+        the 'params.properties' file. (Read this file to create parameter-based conditions for the generator.)
   - agent_token:
       type: password
       required: true
