@@ -1,0 +1,71 @@
+name: jetbrains/dynamic-build-chain-settings-generator
+title: Dynamic Build Chain Settings Generator
+version: 1.0.0
+description: |
+  A two-step recipe that can be used to dynamically generate settings for a build chain.
+  This recipe executes the generation step and publishes the settings as an artifact.
+  This recipe prepares an environment so that the DSL runs as if it were generating settings
+  within the context of your project. To do so, it needs credentials with EDIT permissions to
+  the project. These credentials should be provided as `agent_username` and `agent_password`.
+inputs:
+  - SERVER_URL:
+      type: text
+      required: false
+      label: Server URL
+      description: |
+        The full TeamCity server URL (for example, https://teamcity.jetbrains.com). 
+        The default value is %teamcity.serverUrl%.
+      default: "%teamcity.serverUrl%"
+  - PROJECT_ID:
+      type: text
+      required: true
+      label: Project ID
+      description: |
+        The project ID whose generated configs are relative to.
+  - env.input_params:
+      type: text
+      required: false
+      label: DSL parameters
+      description: |
+        Additional parameters to write to params.properties, in the
+        'param1=value1,param2=value2' format. Each pair is written on its own line.
+  - agent_username:
+      type: password
+      required: true
+      label: Agent username
+      description: |
+        Username of credentials with EDIT permissions to the project.
+  - agent_password:
+      type: password
+      required: true
+      label: Agent password
+      description: |
+        Password of credentials with EDIT permissions to the project.
+steps:
+  - name: Generate dsl params file
+    script: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      cd .teamcity
+
+      echo "IS_DYNAMIC_CHAIN=true" > params.properties
+
+      if [ -n "${input_params:-}" ]; then
+        IFS=',' read -ra pairs <<< "$input_params"
+        for pair in "${pairs[@]}"; do
+          # trim surrounding whitespace and skip empty entries
+          pair="$(printf '%s' "$pair" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          [ -z "$pair" ] && continue
+          echo "$pair" >> params.properties
+        done
+      fi
+  - name: Generate Settings
+    script: |
+      cd .teamcity/
+
+      curl -sSf -u "%agent_username%:%agent_password%" -o dsl-context.zip "%teamcity.serverUrl%/app/dsl-context?projectExtId=DynamicBuildChains"
+
+      JAVA_HOME=~/.asdf/installs/java/corretto-21.0.11.10.1 mvn -Dteamcity.versionedSettings.exposeInternalParameters=true -Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true -DserverContext=dsl-context.zip teamcity-configs:generate -f pom.xml
+
+      rm -rf "target/generated-configs/%DSL_RELATIVE_ROOT_ID%"

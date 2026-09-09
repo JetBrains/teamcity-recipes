@@ -12,6 +12,7 @@ recipes {
     add("src/create-file")
     add("src/dagger")
     add("src/download-file")
+    add("src/dynamic-build-chain-settings-generator")
     add("src/import-xml-report")
     add("src/pin-build")
     add("src/publish-artifacts")
