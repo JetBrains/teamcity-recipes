@@ -18,10 +18,11 @@ inputs:
       default: "%teamcity.serverUrl%"
   - PROJECT_ID:
       type: text
-      required: true
+      required: false
       label: Project ID
       description: |
         The project ID whose generated configs are relative to.
+      default: "%teamcity.project.id%"
   - env.input_params:
       type: text
       required: false
