@@ -2,13 +2,13 @@ name: jetbrains/dynamic-build-chain-settings-generator
 title: Dynamic Build Chain Settings Generator
 version: 1.0.0
 description: |
-  A two-step recipe that can be used to dynamically generate settings for a build chain.
+  A recipe that can be used to dynamically generate settings for a build chain.
   This recipe executes the generation step and publishes the settings as an artifact.
   This recipe prepares an environment so that the DSL runs as if it were generating settings
   within the context of your project. To do so, it needs credentials with EDIT permissions to
   the project.
 inputs:
-  - SERVER_URL:
+  - env.input_server_url:
       type: text
       required: false
       label: Server URL
@@ -16,7 +16,7 @@ inputs:
         The full TeamCity server URL (for example, https://teamcity.jetbrains.com). 
         The default value is %teamcity.serverUrl%.
       default: "%teamcity.serverUrl%"
-  - PROJECT_ID:
+  - env.input_project_id:
       type: text
       required: false
       label: Project ID
@@ -30,37 +30,29 @@ inputs:
       description: |
         A list of newline-delimited 'name=value' parameters to write to 
         the 'params.properties' file. (Read this file to create parameter-based conditions for the generator.)
-  - agent_token:
+  - env.input_agent_token:
       type: password
       required: true
-      label: Agent token
+      label: Authentication token
       description: |
-        Bearer token with EDIT permissions to the project.
+        Bearer token with EDIT permissions to the project. 
+        This token will be used to download the context to generate settings.
+  - env.input_settings_directory:
+      type: text
+      required: false
+      label: Settings directory
+      description: |
+        The directory where the versioned settings are currently.
+        If not specified, the default is '.teamcity'.
+      default: ".teamcity"
+  - env.input_maven_tool_path:
+      type: text
+      required: false
+      label: Maven tool path
+      description: |
+        The path to the Maven tool to use for the generation of the versioned settings.
+        If not specified, the default is '%teamcity.tool.maven3_9%'.
+      default: "%teamcity.tool.maven3_9%"
 steps:
-  - name: Generate dsl params file
-    script: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-
-      cd .teamcity
-
-      echo "IS_DYNAMIC_CHAIN=true" > params.properties
-
-      if [ -n "${input_params:-}" ]; then
-        IFS=',' read -ra pairs <<< "$input_params"
-        for pair in "${pairs[@]}"; do
-          # trim surrounding whitespace and skip empty entries
-          pair="$(printf '%s' "$pair" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-          [ -z "$pair" ] && continue
-          echo "$pair" >> params.properties
-        done
-      fi
   - name: Generate Settings
-    script: |
-      cd .teamcity/
-
-      curl -sSf --header "Authorization: Bearer %agent_token%" -o dsl-context.zip "%SERVER_URL%/app/dsl-context?projectExtId=%PROJECT_ID%"
-
-      mvn -Dteamcity.versionedSettings.exposeInternalParameters=true -Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true -DserverContext=dsl-context.zip teamcity-configs:generate -f pom.xml
-
-      rm -rf "target/generated-configs/%DSL_RELATIVE_ROOT_ID%"
+    kotlin-script: !include src.main.kts
