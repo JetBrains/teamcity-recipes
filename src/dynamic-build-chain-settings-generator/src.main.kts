@@ -3,29 +3,26 @@
 @file:DependsOn("org.jetbrains.teamcity:common:2026.1")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-import jetbrains.buildServer.SimpleCommandLineProcessRunner
-import java.io.File
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
-import jetbrains.buildServer.util.FileUtil
 import jetbrains.buildServer.util.HTTPRequestBuilder
 import jetbrains.buildServer.util.StringUtil
+import jetbrains.buildServer.util.SystemInfo
 import jetbrains.buildServer.util.http.HttpMethod
 import jetbrains.buildServer.util.retry.AbortRetriesException
 import jetbrains.buildServer.util.retry.Retrier
 import jetbrains.buildServer.util.retry.RetrierEventListener
-import jetbrains.buildServer.util.retry.impl.AbortingListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 class HttpErrorException(val statusCode: Int, message: String) : Exception("Failed to execute HTTP request: $statusCode - $message")
@@ -33,11 +30,13 @@ class HttpErrorException(val statusCode: Int, message: String) : Exception("Fail
 val retrier = Retrier.withAttempts(3, Retrier.DelayStrategy.exponentialBackoff(1000))
     .registerListener(HttpErrorCodeListener())
 
+val AGENT_TOKEN = "agent_token"
+
 runCatchingWithLogging {
     val settingsDirectory = requiredInput("settings_directory")
     val serverUrl = requiredInput("server_url")
     val projectId = requiredInput("project_id")
-    val accessToken = requiredInput("agent_token")
+    val accessToken = requiredInput(AGENT_TOKEN)
     val mavenToolPath = requiredInput("maven_tool_path")
 
     val settingsDirectoryFile = File(settingsDirectory)
@@ -64,16 +63,23 @@ runCatchingWithLogging {
             createBinaryFile("$settingsDirectory/dsl-context.zip", dslContext)
         }
 
+        val mavenPath = if (SystemInfo.isWindows){
+            "$mavenToolPath\\bin\\mvn.cmd"
+        } else {
+            "$mavenToolPath/bin/mvn"
+        }
+
         val result = ProcessUtils.runProcess(
             listOf(
-                "$mavenToolPath/bin/mvn",
+                mavenPath,
                 "-Dteamcity.versionedSettings.exposeInternalParameters=true",
                 "-Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true",
                 "-DserverContext=dsl-context.zip",
                 "teamcity-configs:generate",
                 "-f", "pom.xml",
             ),
-            settingsDirectoryFile
+            settingsDirectoryFile,
+            removeEnv = listOf("input_$AGENT_TOKEN")
         )
         if (result == null || result.exitCode != 0) {
             throw RuntimeException("Settings generation failed" + (result?.let { " with exit code ${it.exitCode}" } ?: ""))
@@ -130,13 +136,19 @@ object ProcessUtils {
         command: List<String>,
         workingDir: File,
         options: RunOptions = RunOptions(),
+        removeEnv: List<String> = emptyList()
     ): ProcessResult? = runBlocking {
         if (!options.isSilent) {
             println("Starting: ${command.joinToString(" ")}")
             println("In directory: ${workingDir.absolutePath}")
         }
         try {
-            val process = ProcessBuilder(command).directory(workingDir).redirectErrorStream(false).start()
+            val processBuilder = ProcessBuilder(command)
+                .directory(workingDir)
+                .redirectErrorStream(false)
+            modifyProcessEnvironment(processBuilder, removeEnv)
+
+            val process = processBuilder.start()
 
             val stdoutDeferred = readLines(process.inputStream, options.isSilent, false)
             val stderrDeferred = readLines(process.errorStream, options.isSilent, true)
@@ -163,6 +175,11 @@ object ProcessUtils {
             }
             return@runBlocking null
         }
+    }
+
+    fun modifyProcessEnvironment(processBuilder: ProcessBuilder, removeEnv: List<String>) {
+        val envVariables = processBuilder.environment()
+        removeEnv.forEach { envVariables.remove(it) }
     }
 
     private fun CoroutineScope.readLines(inputStream: InputStream, isSilent: Boolean, isError: Boolean) =
