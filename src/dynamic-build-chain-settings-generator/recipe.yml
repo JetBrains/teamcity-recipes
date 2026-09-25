@@ -28,7 +28,7 @@ inputs:
       required: false
       label: DSL parameters
       description: |
-        A list of newline-delimited 'name=value' parameters to write to 
+        A list of comma-delimited 'name=value' parameters to write to 
         the 'params.properties' file. (Read this file to create parameter-based conditions for the generator.)
   - env.input_agent_token:
       type: password
@@ -53,6 +53,20 @@ inputs:
         The path to the Maven tool to use for the generation of the versioned settings.
         If not specified, the default is '%teamcity.tool.maven3_9%'.
       default: "%teamcity.tool.maven3_9%"
+  - env.input_java_home:
+      type: text
+      required: false
+      label: Java Home
+      description: |
+        The path to the Java home to use for the generation of the versioned settings.
+      default: "%teamcity.agent.jvm.java.home%"
+  - env.input_additional_maven_arguments:
+      type: text
+      required: false
+      label: Additional Maven arguments
+      description: |
+        A list of comma-delimited 'name=value' parameters without the '-D' prefix
+        to use as additional Maven arguments to pass to the Maven command.
 steps:
   - name: Generate Settings
     kotlin-script: !include src.main.kts

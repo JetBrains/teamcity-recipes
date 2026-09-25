@@ -38,6 +38,14 @@ runCatchingWithLogging {
     val projectId = requiredInput("project_id")
     val accessToken = requiredInput(AGENT_TOKEN)
     val mavenToolPath = requiredInput("maven_tool_path")
+    val javaHomePath = requiredInput("java_home")
+    val additionalMavenArguments = System.getenv("input_additional_maven_arguments").orEmpty()
+        .split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .map {
+            "-D$it"
+        }
 
     val settingsDirectoryFile = File(settingsDirectory)
 
@@ -63,23 +71,28 @@ runCatchingWithLogging {
             createBinaryFile("$settingsDirectory/dsl-context.zip", dslContext)
         }
 
-        val mavenPath = if (SystemInfo.isWindows){
+        val mavenPath = if (SystemInfo.isWindows) {
             "$mavenToolPath\\bin\\mvn.cmd"
         } else {
             "$mavenToolPath/bin/mvn"
         }
 
+        val command = listOf(
+            mavenPath,
+            "-Dteamcity.versionedSettings.exposeInternalParameters=true",
+            "-Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true",
+            "-DserverContext=dsl-context.zip",
+            *additionalMavenArguments.toTypedArray(),
+            "clean",
+            "teamcity-configs:generate",
+            "-f", "pom.xml",
+        )
+
         val result = ProcessUtils.runProcess(
-            listOf(
-                mavenPath,
-                "-Dteamcity.versionedSettings.exposeInternalParameters=true",
-                "-Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true",
-                "-DserverContext=dsl-context.zip",
-                "teamcity-configs:generate",
-                "-f", "pom.xml",
-            ),
+            command,
             settingsDirectoryFile,
-            removeEnv = listOf("input_$AGENT_TOKEN")
+            removeEnv = listOf("input_$AGENT_TOKEN"),
+            addEnv = mapOf("JAVA_HOME" to javaHomePath),
         )
         if (result == null || result.exitCode != 0) {
             throw RuntimeException("Settings generation failed" + (result?.let { " with exit code ${it.exitCode}" } ?: ""))
@@ -136,7 +149,8 @@ object ProcessUtils {
         command: List<String>,
         workingDir: File,
         options: RunOptions = RunOptions(),
-        removeEnv: List<String> = emptyList()
+        removeEnv: List<String> = emptyList(),
+        addEnv: Map<String, String> = emptyMap()
     ): ProcessResult? = runBlocking {
         if (!options.isSilent) {
             println("Starting: ${command.joinToString(" ")}")
@@ -146,7 +160,7 @@ object ProcessUtils {
             val processBuilder = ProcessBuilder(command)
                 .directory(workingDir)
                 .redirectErrorStream(false)
-            modifyProcessEnvironment(processBuilder, removeEnv)
+            modifyProcessEnvironment(processBuilder, removeEnv, addEnv)
 
             val process = processBuilder.start()
 
@@ -177,9 +191,10 @@ object ProcessUtils {
         }
     }
 
-    fun modifyProcessEnvironment(processBuilder: ProcessBuilder, removeEnv: List<String>) {
+    fun modifyProcessEnvironment(processBuilder: ProcessBuilder, removeEnv: List<String>, addEnv: Map<String, String>) {
         val envVariables = processBuilder.environment()
         removeEnv.forEach { envVariables.remove(it) }
+        addEnv.filter { it.value.isNotEmpty() }.forEach { (key, value) -> envVariables[key] = value }
     }
 
     private fun CoroutineScope.readLines(inputStream: InputStream, isSilent: Boolean, isError: Boolean) =
