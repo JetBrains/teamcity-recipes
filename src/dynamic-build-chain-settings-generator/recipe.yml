@@ -67,6 +67,13 @@ inputs:
       description: |
         A list of comma-delimited 'name=value' parameters without the '-D' prefix
         to use as additional Maven arguments to pass to the Maven command.
+  - env.input_maven_settings_path:
+      type: text
+      required: false
+      label: Maven settings path
+      description: |
+        The path, from the checkout directory, 
+        to the Maven settings file to use for the generation of the versioned settings.
 steps:
   - name: Generate Settings
     kotlin-script: !include src.main.kts

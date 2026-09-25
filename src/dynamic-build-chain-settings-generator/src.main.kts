@@ -3,6 +3,7 @@
 @file:DependsOn("org.jetbrains.teamcity:common:2026.1")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
+import jdk.internal.org.jline.utils.Colors.s
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.TAGS_ATRRIBUTE
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage.asString
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes.MESSAGE
@@ -39,6 +40,7 @@ runCatchingWithLogging {
     val accessToken = requiredInput(AGENT_TOKEN)
     val mavenToolPath = requiredInput("maven_tool_path")
     val javaHomePath = requiredInput("java_home")
+    val inputMavenSettingsPath = System.getenv("input_maven_settings_path")
     val additionalMavenArguments = System.getenv("input_additional_maven_arguments").orEmpty()
         .split(",")
         .map { it.trim() }
@@ -46,6 +48,11 @@ runCatchingWithLogging {
         .map {
             "-D$it"
         }
+    val additionalMavenProperties = if (StringUtil.isNotEmpty(inputMavenSettingsPath)) {
+        additionalMavenArguments + listOf("-s", File(inputMavenSettingsPath).absolutePath)
+    } else {
+        additionalMavenArguments
+    }
 
     val settingsDirectoryFile = File(settingsDirectory)
 
@@ -82,7 +89,7 @@ runCatchingWithLogging {
             "-Dteamcity.versionedSettings.exposeInternalParameters=true",
             "-Dteamcity.internal.dsl.IS_DYNAMIC_CHAIN=true",
             "-DserverContext=dsl-context.zip",
-            *additionalMavenArguments.toTypedArray(),
+            *additionalMavenProperties.toTypedArray(),
             "clean",
             "teamcity-configs:generate",
             "-f", "pom.xml",
