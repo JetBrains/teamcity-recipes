@@ -48,7 +48,7 @@ inputs:
   - env.input_maven_tool_path:
       type: text
       required: false
-      label: Maven tool path
+      label: Maven path
       description: |
         The path to the Maven tool to use for the generation of the versioned settings.
         If not specified, the default is '%teamcity.tool.maven3_9%'.

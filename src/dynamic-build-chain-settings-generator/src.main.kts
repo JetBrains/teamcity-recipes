@@ -98,7 +98,6 @@ runCatchingWithLogging {
         val result = ProcessUtils.runProcess(
             command,
             settingsDirectoryFile,
-            removeEnv = listOf("input_$AGENT_TOKEN"),
             addEnv = mapOf("JAVA_HOME" to javaHomePath),
         )
         if (result == null || result.exitCode != 0) {
@@ -156,7 +155,6 @@ object ProcessUtils {
         command: List<String>,
         workingDir: File,
         options: RunOptions = RunOptions(),
-        removeEnv: List<String> = emptyList(),
         addEnv: Map<String, String> = emptyMap()
     ): ProcessResult? = runBlocking {
         if (!options.isSilent) {
@@ -167,7 +165,7 @@ object ProcessUtils {
             val processBuilder = ProcessBuilder(command)
                 .directory(workingDir)
                 .redirectErrorStream(false)
-            modifyProcessEnvironment(processBuilder, removeEnv, addEnv)
+            modifyProcessEnvironment(processBuilder, addEnv)
 
             val process = processBuilder.start()
 
@@ -198,9 +196,10 @@ object ProcessUtils {
         }
     }
 
-    fun modifyProcessEnvironment(processBuilder: ProcessBuilder, removeEnv: List<String>, addEnv: Map<String, String>) {
+    fun modifyProcessEnvironment(processBuilder: ProcessBuilder, addEnv: Map<String, String>) {
         val envVariables = processBuilder.environment()
-        removeEnv.forEach { envVariables.remove(it) }
+        // We want to avoid inheriting env variables
+        envVariables.clear()
         addEnv.filter { it.value.isNotEmpty() }.forEach { (key, value) -> envVariables[key] = value }
     }
 
